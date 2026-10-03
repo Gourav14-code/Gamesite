@@ -404,7 +404,7 @@ export default function WebGame({ onLaunchBike }) {
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
           {modal.duel || modal.id === 0 || modal.id === 1 || (modal.title && modal.title.includes('Pistol')) ? (
-            <div className="w-full max-w-[1080px] h-full max-h-[620px] flex items-center justify-center p-0">
+            <div className="w-full max-w-[1080px] h-full flex items-center justify-center p-0 sm:p-2">
               <PistolDuel
                 onClose={closeModal}
                 onToggleFullscreen={toggleFullscreen}

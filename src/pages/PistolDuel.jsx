@@ -1,17 +1,15 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   PISTOL DUEL — EXACT 1:1 RECREATION WITH AUTHENTIC ARCADE CABINET FRAME
-   Uses the actual high-resolution reference cabinet console as the frame asset:
-   - Authentic heavy-metal chassis with 45° chamfers & mechanical vents
-   - Raised bronze/gold plaque with engraved crossed revolvers & "Pistol Duel"
-   - Cyan (left) & Red (right) neon glow light bars
-   - Embedded CRT monitor area with dynamic 2D rigid-body recoil physics
-   - Red CPU gun on the LEFT, Golden-Orange Player gun on the RIGHT
-   - 24-dot glowing projectile trajectory line (Red → Orange → Gold)
-   - P1 cyan hearts (3 full, 1 empty), CPU red hearts (2 full)
-   - LEVEL 2 status pill (LEVEL 2 | 🪙 100 | 🔊 | 🔋)
-   - Tactile interactive buttons matching physical cabinet: Like (99%) & Report game
+   PISTOL DUEL — ULTRA HIGH-QUALITY RESPONSIVE ARCADE CONSOLE
+   ═══════════════════════════════════════════════════════════════════════════════
+   - Ultra High-DPI Vector Construction: Razor sharp on 4K, Retina, and mobile OLED
+   - Landscape & Portrait Mobile Adaptive:
+     * Landscape (Desktop / Tablet): Widescreen 1.85:1 arcade machine console
+     * Portrait (Mobile): Seamless vertical console where "Pistol Duel" gold
+       plaque & crossed revolvers sit proudly at the TOP, followed by neon light bars,
+       CPU gun on top, Player gun at bottom, vertical CRT arena, and bottom controls!
+   - 2D Rigid-body recoil physics, shell casing ejection, ricochets, Web Audio
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 // ── 12 Levels Configuration ───────────────────────────────────────────────────
@@ -186,12 +184,12 @@ function renderArcadeGun(ctx, gun, isPlayer) {
   ctx.shadowOffsetX = 3;
   ctx.shadowOffsetY = 4;
 
-  // 1. Grip / Handle (Dark heavy textured metal)
+  // 1. Grip / Handle
   ctx.fillStyle = '#141416';
   drawRoundRect(ctx, -GL * 0.34, GH * 0.1, GL * 0.3, GH * 0.9, 4);
   ctx.fill();
 
-  // White base accent on Player grip (as in reference image)
+  // White base accent on Player grip
   if (isPlayer) {
     ctx.fillStyle = '#f8fafc';
     drawRoundRect(ctx, -GL * 0.28, GH * 0.82, GL * 0.18, GH * 0.18, 2);
@@ -281,6 +279,14 @@ export default function PistolDuel({
   const [localLiked, setLocalLiked] = useState(false);
   const [reportedMsg, setReportedMsg] = useState(false);
 
+  // Orientation state: Portrait vs Landscape
+  const [isPortrait, setIsPortrait] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 700 || window.innerHeight > window.innerWidth * 1.05;
+    }
+    return false;
+  });
+
   // Status HUD: Player (4 hearts total: 3 full, 1 empty), CPU (2 full hearts)
   const [hud, setHud] = useState({
     playerHp: 3,
@@ -315,23 +321,41 @@ export default function PistolDuel({
       setTimeout(() => setReportedMsg(false), 2500);
     });
 
-  // ── Spawn Gun Initial State (Matches Image 1 Exact Layout) ────────────────
-  const initLevelState = useCallback((lIdx, W, H) => {
+  // Window resize & orientation detection
+  useEffect(() => {
+    const handleWinResize = () => {
+      const port = window.innerWidth < 700 || window.innerHeight > window.innerWidth * 1.05;
+      setIsPortrait(port);
+    };
+    window.addEventListener('resize', handleWinResize);
+    window.addEventListener('orientationchange', handleWinResize);
+    return () => {
+      window.removeEventListener('resize', handleWinResize);
+      window.removeEventListener('orientationchange', handleWinResize);
+    };
+  }, []);
+
+  // ── Spawn Gun Initial State ───────────────────────────────────────────────
+  const initLevelState = useCallback((lIdx, W, H, port) => {
     const cfg = LEVELS[Math.min(lIdx, LEVELS.length - 1)];
 
-    // Target gun size: prominent and clear, ~13-15% of screen width
-    const gunWidth = Math.max(54, Math.min(84, W * 0.135));
+    // Target gun size: prominent and clear
+    const gunWidth = port
+      ? Math.max(46, Math.min(68, W * 0.16))
+      : Math.max(54, Math.min(84, W * 0.135));
     const gunHeight = gunWidth * 0.44;
     const radius = gunWidth * 0.48;
 
-    // CPU Gun (Red) - Top Left (around x: 17%, y: 28% of arena)
+    // CPU Gun (Red) - Top Left
+    const cpuX = port ? W * 0.22 : W * 0.17;
+    const cpuY = port ? H * 0.18 : H * 0.28;
     const cpu = {
-      x: W * 0.17,
-      y: H * 0.28,
+      x: cpuX,
+      y: cpuY,
       vx: 0,
       vy: 0,
-      angle: 0.58,               // Aiming down-right toward player
-      spin: -0.5,                // Smooth natural rotation
+      angle: port ? 0.78 : 0.58,  // Aiming down-right toward player
+      spin: -0.5,
       length: gunWidth,
       height: gunHeight,
       radius,
@@ -343,18 +367,20 @@ export default function PistolDuel({
       timer: cfg.cpuDelay,
     };
 
-    // Player Gun (Yellow/Orange) - Bottom Right (around x: 82%, y: 72% of arena)
+    // Player Gun (Yellow/Orange) - Bottom Right
+    const playerX = port ? W * 0.78 : W * 0.82;
+    const playerY = port ? H * 0.82 : H * 0.72;
     const player = {
-      x: W * 0.82,
-      y: H * 0.72,
+      x: playerX,
+      y: playerY,
       vx: 0,
       vy: 0,
-      angle: Math.PI + 0.58,     // Aiming up-left toward CPU
-      spin: 0.6,                 // Smooth natural rotation
+      angle: port ? Math.PI + 0.78 : Math.PI + 0.58, // Aiming up-left toward CPU
+      spin: 0.6,
       length: gunWidth,
       height: gunHeight,
       radius,
-      hp: 3,                     // 3 full hearts out of 4 max (matches reference image)
+      hp: 3,
       maxHp: cfg.playerMaxHp || 4,
       flash: 0,
       ghosts: [],
@@ -393,10 +419,10 @@ export default function PistolDuel({
 
       if (screenAreaRef.current) {
         const rect = screenAreaRef.current.getBoundingClientRect();
-        stateRef.current = initLevelState(idx, rect.width || 600, rect.height || 300);
+        stateRef.current = initLevelState(idx, rect.width || 600, rect.height || 300, isPortrait);
       }
     },
-    [initLevelState]
+    [initLevelState, isPortrait]
   );
 
   // ── Tap to Shoot Mechanic ─────────────────────────────────────────────────
@@ -427,7 +453,7 @@ export default function PistolDuel({
       trail: [],
     });
 
-    // Recoil Force (opposite to muzzle direction)
+    // Recoil Force
     const recoilForce = 220;
     p.vx -= Math.cos(p.angle) * recoilForce;
     p.vy -= Math.sin(p.angle) * recoilForce;
@@ -489,7 +515,7 @@ export default function PistolDuel({
       }
 
       if (!stateRef.current) {
-        stateRef.current = initLevelState(levelIdx, W, H);
+        stateRef.current = initLevelState(levelIdx, W, H, isPortrait);
       } else {
         stateRef.current.w = W;
         stateRef.current.h = H;
@@ -499,7 +525,7 @@ export default function PistolDuel({
     resize();
     window.addEventListener('resize', resize);
 
-    // Physics constants
+    // Physics parameters
     const LINEAR_DRAG = 0.982;
     const ANGULAR_DRAG = 0.985;
     const BOUNCE_RESTITUTION = 0.78;
@@ -940,7 +966,7 @@ export default function PistolDuel({
       cancelAnimationFrame(animFrameRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [initLevelState, levelIdx]);
+  }, [initLevelState, levelIdx, isPortrait]);
 
   return (
     <div
@@ -950,57 +976,364 @@ export default function PistolDuel({
       }}
     >
       {/* ═════════════════════════════════════════════════════════════════════
-          AUTHENTIC PHYSICAL RETRO-FUTURISTIC ARCADE CABINET CONSOLE
-          Exact 1.85:1 aspect ratio matching the 610 × 329 reference photograph
+          ULTRA HIGH-QUALITY RETRO-FUTURISTIC ARCADE CABINET CONSOLE
+          Adapts dynamically:
+          - Landscape / Desktop: Widescreen arcade cabinet (aspect 1000/540)
+          - Portrait / Mobile: Vertical arcade machine where "Pistol Duel"
+            plaque is at the TOP, followed by neon tubes, CRT duel, & bottom controls!
           ═════════════════════════════════════════════════════════════════════ */}
       <div
-        className="relative w-full max-w-[1080px] aspect-[610/329] flex items-center justify-center overflow-hidden"
+        className={`relative w-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
+          isPortrait
+            ? 'max-w-[480px] h-full max-h-[96vh] aspect-[440/720]'
+            : 'max-w-[1040px] max-h-[92vh] aspect-[1000/540]'
+        }`}
         style={{
           filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.95))',
         }}
       >
-        {/* 1. ACTUAL PHYSICAL ARCADE CABINET FRAME IMAGE */}
-        <img
-          src="/images/pistol_duel_cabinet.png"
-          alt="Pistol Duel Arcade Console"
-          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-10"
-        />
+        {/* ── VECTOR GRAPHICS DEFINITIONS (Gradients & Filters) ─────────────── */}
+        <svg className="absolute w-0 h-0" style={{ position: 'absolute', width: 0, height: 0 }}>
+          <defs>
+            <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#434c5e" />
+              <stop offset="15%" stopColor="#2e3440" />
+              <stop offset="50%" stopColor="#1e222b" />
+              <stop offset="85%" stopColor="#2e3440" />
+              <stop offset="100%" stopColor="#181b22" />
+            </linearGradient>
 
-        {/* 2. DYNAMIC CRT MONITOR SCREEN (Coordinates match screen cutout in cabinet) */}
+            <linearGradient id="innerBezelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#14171f" />
+              <stop offset="100%" stopColor="#2b313e" />
+            </linearGradient>
+
+            <linearGradient id="goldFrameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="18%" stopColor="#eab308" />
+              <stop offset="55%" stopColor="#b45309" />
+              <stop offset="85%" stopColor="#78350f" />
+              <stop offset="100%" stopColor="#451a03" />
+            </linearGradient>
+
+            <linearGradient id="goldTextGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#fffbeb" />
+              <stop offset="35%" stopColor="#fde047" />
+              <stop offset="70%" stopColor="#d97706" />
+              <stop offset="100%" stopColor="#78350f" />
+            </linearGradient>
+
+            <linearGradient id="cyanTube" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="30%" stopColor="#67e8f9" />
+              <stop offset="70%" stopColor="#06b6d4" />
+              <stop offset="100%" stopColor="#0891b2" />
+            </linearGradient>
+
+            <linearGradient id="redTube" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="30%" stopColor="#fca5a5" />
+              <stop offset="70%" stopColor="#ef4444" />
+              <stop offset="100%" stopColor="#b91c1c" />
+            </linearGradient>
+
+            <linearGradient id="btnMetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#3d4556" />
+              <stop offset="40%" stopColor="#252b36" />
+              <stop offset="100%" stopColor="#171b22" />
+            </linearGradient>
+
+            <filter id="cyanGlow" x="-20%" y="-50%" width="140%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+            </filter>
+            <filter id="redGlow" x="-20%" y="-50%" width="140%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+            </filter>
+            <filter id="goldDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.9" />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* ── 1. ULTRA HIGH-QUALITY VECTOR FRAME SVG ───────────────────────── */}
+        {isPortrait ? (
+          /* ════════ PORTRAIT MOBILE SVG CHASSIS (viewBox 0 0 440 720) ═══════ */
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+            viewBox="0 0 440 720"
+            preserveAspectRatio="none"
+          >
+            {/* Outer Heavy Metal Shell */}
+            <path
+              d="M 36,12 L 140,12 L 148,4 L 292,4 L 300,12 L 404,12 L 428,36 L 428,684 L 404,708 L 36,708 L 12,684 L 12,36 Z"
+              fill="url(#chassisGrad)"
+              stroke="#5c667a"
+              strokeWidth="2"
+            />
+            {/* Inner Lip */}
+            <path
+              d="M 40,16 L 400,16 L 424,40 L 424,680 L 400,704 L 40,704 L 16,680 L 16,40 Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="1.2"
+            />
+
+            {/* Left Cyan & Right Red Ambient Rim Glow */}
+            <path d="M 12,36 L 12,684" stroke="#00f0ff" strokeWidth="3.5" filter="url(#cyanGlow)" opacity="0.85" />
+            <path d="M 428,36 L 428,684" stroke="#ff2244" strokeWidth="3.5" filter="url(#redGlow)" opacity="0.85" />
+
+            {/* Top-Left Circular Dial */}
+            <g transform="translate(48, 38)">
+              <circle cx="0" cy="0" r="15" fill="#1e232d" stroke="#525d70" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="11" fill="#2a0d12" stroke="#ef4444" strokeWidth="1.2" />
+              <line x1="-10" y1="0" x2="-5" y2="0" stroke="#ef4444" strokeWidth="1.5" />
+              <line x1="5" y1="0" x2="10" y2="0" stroke="#ef4444" strokeWidth="1.5" />
+              <line x1="0" y1="-10" x2="0" y2="-5" stroke="#ef4444" strokeWidth="1.5" />
+              <line x1="0" y1="5" x2="0" y2="10" stroke="#ef4444" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="2" fill="#ef4444" />
+            </g>
+
+            {/* Top-Right Tactical Scope & Exit Buttons */}
+            <g transform="translate(364, 26)">
+              <rect x="0" y="0" width="24" height="24" rx="5" fill="#222834" stroke="#4f596d" strokeWidth="1.2" />
+              <circle cx="12" cy="12" r="4" fill="none" stroke="#94a3b8" strokeWidth="1.2" />
+            </g>
+            <g transform="translate(394, 26)">
+              <rect x="0" y="0" width="24" height="24" rx="5" fill="#2b1418" stroke="#ef4444" strokeWidth="1.2" />
+              <line x1="7" y1="7" x2="17" y2="17" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+              <line x1="17" y1="7" x2="7" y2="17" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+            </g>
+
+            {/* TOP-CENTER RAISED GOLD PLAQUE WITH CROSSED REVOLVERS */}
+            <g transform="translate(130, 4)" filter="url(#goldDropShadow)">
+              {/* Crossed Revolvers Emblem */}
+              <g transform="translate(90, 2) scale(0.85)" fill="url(#goldTextGrad)" stroke="#5c2e0b" strokeWidth="0.8">
+                <g transform="rotate(-32)">
+                  <rect x="-16" y="-3" width="24" height="5" rx="1.5" />
+                  <rect x="-12" y="2" width="7" height="9" rx="1.5" />
+                </g>
+                <g transform="rotate(32)">
+                  <rect x="-8" y="-3" width="24" height="5" rx="1.5" />
+                  <rect x="-5" y="2" width="7" height="9" rx="1.5" />
+                </g>
+              </g>
+
+              {/* Stepped Brass Border */}
+              <path
+                d="M 12,12 L 168,12 L 176,20 L 176,54 L 168,62 L 12,62 L 4,54 L 4,20 Z"
+                fill="url(#goldFrameGrad)"
+                stroke="#fde047"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M 15,15 L 165,15 L 171,21 L 171,51 L 165,57 L 15,57 L 9,51 L 9,21 Z"
+                fill="#141720"
+                stroke="#78350f"
+                strokeWidth="1.2"
+              />
+              {/* Screws */}
+              <circle cx="16" cy="22" r="2" fill="#fde047" stroke="#78350f" />
+              <circle cx="164" cy="22" r="2" fill="#fde047" stroke="#78350f" />
+              <circle cx="16" cy="50" r="2" fill="#fde047" stroke="#78350f" />
+              <circle cx="164" cy="50" r="2" fill="#fde047" stroke="#78350f" />
+
+              {/* Bold Serif "Pistol Duel" */}
+              <text
+                x="90"
+                y="43"
+                textAnchor="middle"
+                fontFamily="Georgia, 'Times New Roman', serif"
+                fontSize="18"
+                fontWeight="900"
+                letterSpacing="1"
+                fill="url(#goldTextGrad)"
+                stroke="#451a03"
+                strokeWidth="0.6"
+              >
+                Pistol Duel
+              </text>
+            </g>
+
+            {/* Neon Glow Light Bars (Cyan Left, Red Right) */}
+            <rect x="74" y="66" width="100" height="6" rx="3" fill="url(#cyanTube)" filter="url(#cyanGlow)" />
+            <rect x="266" y="66" width="100" height="6" rx="3" fill="url(#redTube)" filter="url(#redGlow)" />
+
+            {/* Inner CRT Screen Frame Bezel */}
+            <path
+              d="M 38,82 L 402,82 L 412,92 L 412,586 L 402,596 L 38,596 L 28,586 L 28,92 Z"
+              fill="url(#innerBezelGrad)"
+              stroke="#454f63"
+              strokeWidth="2.5"
+            />
+            <rect x="36" y="88" width="368" height="500" rx="5" fill="none" stroke="#07090e" strokeWidth="3" />
+
+            {/* Bottom Recessed Instruction Slot Frame */}
+            <rect x="50" y="608" width="340" height="24" rx="12" fill="#0c1017" stroke="#3a4254" strokeWidth="1.2" />
+
+            {/* Bottom Tactile Buttons Frame */}
+            <rect x="60" y="644" width="145" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="1.8" />
+            <path d="M 66,646 L 199,646" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+            <rect x="235" y="644" width="145" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="1.8" />
+            <path d="M 241,646 L 374,646" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+          </svg>
+        ) : (
+          /* ════════ WIDESCREEN LANDSCAPE SVG CHASSIS (viewBox 0 0 1000 540) ═ */
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+            viewBox="0 0 1000 540"
+            preserveAspectRatio="none"
+          >
+            {/* Outer Heavy Metal Chassis */}
+            <path
+              d="M 50,14 L 360,14 L 370,8 L 630,8 L 640,14 L 950,14 L 986,50 L 986,490 L 950,526 L 50,526 L 14,490 L 14,50 Z"
+              fill="url(#chassisGrad)"
+              stroke="#5c667a"
+              strokeWidth="2.5"
+            />
+            <path
+              d="M 54,18 L 946,18 L 982,54 L 982,486 L 946,522 L 54,522 L 18,486 L 18,54 Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth="1.5"
+            />
+
+            {/* Side Ambient Neon Rim Glow */}
+            <path d="M 14,50 L 14,490" stroke="#00f0ff" strokeWidth="4.5" filter="url(#cyanGlow)" opacity="0.8" />
+            <path d="M 986,50 L 986,490" stroke="#ff2244" strokeWidth="4.5" filter="url(#redGlow)" opacity="0.8" />
+
+            {/* Side Flank Milled Ventilation Louvers */}
+            <g fill="#0e1117" stroke="#3b4252" strokeWidth="1">
+              <path d="M 38,180 L 52,166 L 56,168 L 42,182 Z" />
+              <path d="M 38,250 L 52,236 L 56,238 L 42,252 Z" />
+              <path d="M 38,320 L 52,306 L 56,308 L 42,322 Z" />
+              <path d="M 64,130 L 64,390" stroke="#232733" strokeWidth="2" />
+            </g>
+            <g fill="#0e1117" stroke="#3b4252" strokeWidth="1">
+              <path d="M 962,180 L 948,166 L 944,168 L 958,182 Z" />
+              <path d="M 962,250 L 948,236 L 944,238 L 958,252 Z" />
+              <path d="M 962,320 L 948,306 L 944,308 L 958,322 Z" />
+              <path d="M 936,130 L 936,390" stroke="#232733" strokeWidth="2" />
+            </g>
+
+            {/* Top-Left Target Crosshair Dial */}
+            <g transform="translate(114, 48)">
+              <circle cx="0" cy="0" r="23" fill="#1e232d" stroke="#525d70" strokeWidth="2" />
+              <circle cx="0" cy="0" r="16" fill="#2a0d12" stroke="#ef4444" strokeWidth="1.8" />
+              <circle cx="0" cy="0" r="8" fill="none" stroke="#ef4444" strokeWidth="1.2" />
+              <line x1="-15" y1="0" x2="-8" y2="0" stroke="#ef4444" strokeWidth="1.8" />
+              <line x1="8" y1="0" x2="15" y2="0" stroke="#ef4444" strokeWidth="1.8" />
+              <line x1="0" y1="-15" x2="0" y2="-8" stroke="#ef4444" strokeWidth="1.8" />
+              <line x1="0" y1="8" x2="0" y2="15" stroke="#ef4444" strokeWidth="1.8" />
+              <circle cx="0" cy="0" r="2.5" fill="#ef4444" filter="url(#redGlow)" />
+            </g>
+
+            {/* Top-Right Tactical Scope & Exit Buttons */}
+            <g transform="translate(832, 33)">
+              <rect x="0" y="0" width="32" height="30" rx="6" fill="#222834" stroke="#4f596d" strokeWidth="1.5" />
+              <path d="M 8,11 L 8,8 L 11,8 M 21,8 L 24,8 L 24,11 M 8,19 L 8,22 L 11,22 M 21,22 L 24,22 L 24,19" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+              <circle cx="16" cy="15" r="2" fill="#94a3b8" />
+            </g>
+            <g transform="translate(872, 33)">
+              <rect x="0" y="0" width="32" height="30" rx="6" fill="#2b1418" stroke="#ef4444" strokeWidth="1.5" />
+              <line x1="9" y1="8" x2="23" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="23" y1="8" x2="9" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
+            </g>
+
+            {/* Recessed Neon Glow Light Bars */}
+            <rect x="156" y="74" width="188" height="8" rx="4" fill="#081017" stroke="#16232e" strokeWidth="1" />
+            <rect x="159" y="76" width="182" height="4" rx="2" fill="url(#cyanTube)" filter="url(#cyanGlow)" />
+            <rect x="656" y="74" width="188" height="8" rx="4" fill="#17080a" stroke="#2e1619" strokeWidth="1" />
+            <rect x="659" y="76" width="182" height="4" rx="2" fill="url(#redTube)" filter="url(#redGlow)" />
+
+            {/* TOP-CENTER RAISED GOLD PLAQUE WITH CROSSED REVOLVERS */}
+            <g transform="translate(370, 6)" filter="url(#goldDropShadow)">
+              {/* Crossed Revolvers */}
+              <g transform="translate(130, 2) scale(0.95)" fill="url(#goldTextGrad)" stroke="#5c2e0b" strokeWidth="0.8">
+                <g transform="rotate(-32)">
+                  <rect x="-18" y="-4" width="28" height="6" rx="1.5" />
+                  <rect x="-14" y="2" width="8" height="11" rx="2" />
+                  <circle cx="-5" cy="-1" r="4.5" />
+                </g>
+                <g transform="rotate(32)">
+                  <rect x="-10" y="-4" width="28" height="6" rx="1.5" />
+                  <rect x="-6" y="2" width="8" height="11" rx="2" />
+                  <circle cx="3" cy="-1" r="4.5" />
+                </g>
+              </g>
+
+              {/* Plaque Brass Border */}
+              <path d="M 16,14 L 244,14 L 254,24 L 254,64 L 244,74 L 16,74 L 6,64 L 6,24 Z" fill="url(#goldFrameGrad)" stroke="#fde047" strokeWidth="1.5" />
+              <path d="M 20,18 L 240,18 L 248,26 L 248,60 L 240,68 L 20,68 L 12,60 L 12,26 Z" fill="#141720" stroke="#78350f" strokeWidth="1.5" />
+              <circle cx="20" cy="26" r="2.8" fill="#fde047" stroke="#78350f" />
+              <circle cx="240" cy="26" r="2.8" fill="#fde047" stroke="#78350f" />
+              <circle cx="20" cy="60" r="2.8" fill="#fde047" stroke="#78350f" />
+              <circle cx="240" cy="60" r="2.8" fill="#fde047" stroke="#78350f" />
+
+              <text x="130" y="50" textAnchor="middle" fontFamily="Georgia, 'Times New Roman', serif" fontSize="24" fontWeight="900" letterSpacing="1.2" fill="url(#goldTextGrad)" stroke="#451a03" strokeWidth="0.8">
+                Pistol Duel
+              </text>
+            </g>
+
+            {/* Inner Screen Bezel Frame */}
+            <path d="M 112,106 L 888,106 L 902,120 L 902,402 L 888,416 L 112,416 L 98,402 L 98,120 Z" fill="url(#innerBezelGrad)" stroke="#454f63" strokeWidth="3" />
+            <rect x="118" y="112" width="764" height="298" rx="6" fill="none" stroke="#07090e" strokeWidth="4" />
+
+            {/* Bottom Instruction Slot Frame */}
+            <rect x="245" y="420" width="510" height="26" rx="13" fill="#0c1017" stroke="#3a4254" strokeWidth="1.5" />
+
+            {/* Bottom Tactile Buttons Frame */}
+            <rect x="270" y="464" width="180" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="2" />
+            <path d="M 276,466 L 444,466" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
+            <rect x="550" y="464" width="180" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="2" />
+            <path d="M 556,466 L 724,466" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
+          </svg>
+        )}
+
+        {/* ── 2. DYNAMIC CRT MONITOR SCREEN (Adaptive to orientation) ───────── */}
         <div
           ref={screenAreaRef}
           className="absolute overflow-hidden cursor-crosshair z-20"
-          style={{
-            left: '14.2%',
-            top: '20.6%',
-            width: '71.2%',
-            height: '55.2%',
-            borderRadius: '6px',
-            boxShadow: 'inset 0 0 35px rgba(0,0,0,0.95)',
-          }}
+          style={
+            isPortrait
+              ? {
+                  left: '8.4%',
+                  top: '12.4%',
+                  width: '83.2%',
+                  height: '69.2%',
+                  borderRadius: '5px',
+                  boxShadow: 'inset 0 0 25px rgba(0,0,0,0.95)',
+                }
+              : {
+                  left: '11.8%',
+                  top: '20.74%',
+                  width: '76.4%',
+                  height: '55.18%',
+                  borderRadius: '6px',
+                  boxShadow: 'inset 0 0 35px rgba(0,0,0,0.95)',
+                }
+          }
           onClick={handleShoot}
         >
-          {/* Active Canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
 
           {/* In-Screen HUD Overlay */}
-          <div className="absolute top-0 left-0 right-0 px-3 sm:px-5 pt-2 pb-1 flex items-start justify-between pointer-events-none z-30">
+          <div className="absolute top-0 left-0 right-0 px-2 sm:px-5 pt-1.5 sm:pt-2 pb-1 flex items-start justify-between pointer-events-none z-30">
             {/* Upper-Left: P1 + 4 Hearts (3 cyan filled, 1 empty outline) */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <span
                 className="font-mono font-black text-xs sm:text-sm tracking-widest text-[#00e5ff]"
                 style={{ textShadow: '0 0 8px rgba(0,229,255,0.8)' }}
               >
                 P1
               </span>
-              <div className="flex items-center gap-1 text-sm sm:text-base">
+              <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
                 {[...Array(hud.playerMaxHp)].map((_, i) => (
                   <span
                     key={i}
                     className={
                       i < hud.playerHp
                         ? 'text-[#00e5ff] drop-shadow-[0_0_8px_#00e5ff]'
-                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-3 h-3 -mt-0.5'
+                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 -mt-0.5'
                     }
                   >
                     {i < hud.playerHp ? '♥' : ''}
@@ -1009,10 +1342,10 @@ export default function PistolDuel({
               </div>
             </div>
 
-            {/* Upper-Right Area: CPU Hearts + LEVEL 2 status capsule */}
+            {/* Upper-Right: CPU Hearts + Status Capsule */}
             <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="flex items-center gap-1 text-sm sm:text-base">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
                   {[...Array(hud.cpuMaxHp)].map((_, i) => (
                     <span
                       key={i}
@@ -1034,12 +1367,12 @@ export default function PistolDuel({
                 </span>
               </div>
 
-              {/* Status Capsule: LEVEL 2 | 🪙 100 | Audio | Battery */}
-              <div className="bg-[#121620]/95 px-2.5 py-0.5 rounded-full border border-white/15 flex items-center gap-2 text-[10px] sm:text-[11px] font-mono shadow-inner pointer-events-auto">
+              {/* Status Capsule */}
+              <div className="bg-[#121620]/95 px-2 py-0.5 rounded-full border border-white/15 flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-mono shadow-inner pointer-events-auto">
                 <span className="font-extrabold text-slate-200 tracking-wider">
                   LEVEL {hud.level}
                 </span>
-                <div className="flex items-center gap-1 text-yellow-400 font-bold">
+                <div className="flex items-center gap-0.5 text-yellow-400 font-bold">
                   <span>🪙</span>
                   <span>{coins}</span>
                 </div>
@@ -1062,11 +1395,11 @@ export default function PistolDuel({
           {/* Victory Modal Overlay */}
           {phase === 'victory' && (
             <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-4xl sm:text-5xl animate-bounce mb-1">🏆</div>
-              <h3 className="text-xl sm:text-2xl font-black text-amber-400 uppercase tracking-widest font-serif">
+              <div className="text-3xl sm:text-5xl animate-bounce mb-1">🏆</div>
+              <h3 className="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-widest font-serif">
                 VICTORY!
               </h3>
-              <p className="text-slate-300 text-xs mb-3">
+              <p className="text-slate-300 text-[11px] sm:text-xs mb-3">
                 LEVEL {hud.level} CLEARED · REWARD +50 COINS
               </p>
               <div className="flex gap-2">
@@ -1097,8 +1430,8 @@ export default function PistolDuel({
           {/* Failed Modal Overlay */}
           {phase === 'failed' && (
             <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-4xl sm:text-5xl mb-1">💀</div>
-              <h3 className="text-xl sm:text-2xl font-black text-red-500 uppercase tracking-widest font-serif">
+              <div className="text-3xl sm:text-5xl mb-1">💀</div>
+              <h3 className="text-lg sm:text-2xl font-black text-red-500 uppercase tracking-widest font-serif">
                 FAILED!
               </h3>
               <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-4">
@@ -1118,8 +1451,41 @@ export default function PistolDuel({
           )}
         </div>
 
-        {/* 3. INTERACTIVE BUTTON OVERLAYS OVER CABINET CONTROLS */}
-        {/* Scope (Fullscreen) Button Overlay */}
+        {/* ── 3. BOTTOM RECESSED INSTRUCTION TEXT ─────────────────────────── */}
+        <div
+          className="absolute z-20 text-center pointer-events-none"
+          style={
+            isPortrait
+              ? {
+                  left: '12%',
+                  top: '84.4%',
+                  width: '76%',
+                  height: '3.4%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }
+              : {
+                  left: '24.5%',
+                  top: '77.77%',
+                  width: '51%',
+                  height: '4.81%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }
+          }
+        >
+          <span
+            className="text-[8px] sm:text-[11px] md:text-[12px] font-black tracking-widest text-slate-300 uppercase font-mono animate-pulse"
+            style={{ textShadow: '0 0 8px rgba(56,189,248,0.5)' }}
+          >
+            TAP TO SHOOT — MASTER THE RECOIL FOR THE NEXT LEVEL!
+          </span>
+        </div>
+
+        {/* ── 4. INTERACTIVE BUTTON OVERLAYS ──────────────────────────────── */}
+        {/* Fullscreen Scope Button */}
         {onToggleFullscreen && (
           <button
             onClick={() => {
@@ -1127,17 +1493,16 @@ export default function PistolDuel({
               onToggleFullscreen();
             }}
             className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-white/10 transition"
-            style={{
-              left: '81.4%',
-              top: '6.4%',
-              width: '5.4%',
-              height: '9.2%',
-            }}
+            style={
+              isPortrait
+                ? { left: '82.7%', top: '3.6%', width: '5.5%', height: '3.4%' }
+                : { left: '83.2%', top: '6.1%', width: '3.2%', height: '5.55%' }
+            }
             title="Fullscreen"
           />
         )}
 
-        {/* Exit 'X' Button Overlay */}
+        {/* Exit Button */}
         {onClose && (
           <button
             onClick={() => {
@@ -1145,54 +1510,50 @@ export default function PistolDuel({
               onClose();
             }}
             className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-red-500/20 transition"
-            style={{
-              left: '87.4%',
-              top: '6.4%',
-              width: '5.4%',
-              height: '9.2%',
-            }}
+            style={
+              isPortrait
+                ? { left: '89.5%', top: '3.6%', width: '5.5%', height: '3.4%' }
+                : { left: '87.2%', top: '6.1%', width: '3.2%', height: '5.55%' }
+            }
             title="Exit Game"
           />
         )}
 
-        {/* Like (99%) Button Overlay */}
+        {/* Like (99%) Button */}
         <button
           onClick={() => {
             playSound('click', soundRef.current);
             toggleLike();
           }}
-          className={`absolute z-30 flex items-center justify-center gap-2 text-xs font-black transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 ${
+          className={`absolute z-30 flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-black transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 ${
             isLiked ? 'text-emerald-300' : 'text-slate-300'
           }`}
-          style={{
-            left: '26.4%',
-            top: '82.8%',
-            width: '18.2%',
-            height: '10.5%',
-          }}
+          style={
+            isPortrait
+              ? { left: '13.6%', top: '89.4%', width: '33%', height: '5.8%' }
+              : { left: '27%', top: '85.92%', width: '18%', height: '7.77%' }
+          }
         >
-          {isLiked && <span className="absolute inset-0 border-2 border-emerald-400/80 rounded-xl pointer-events-none shadow-[0_0_12px_rgba(16,185,129,0.5)]" />}
+          <i className={`fa-solid fa-thumbs-up text-xs sm:text-sm ${isLiked ? 'text-emerald-400' : 'text-slate-400'}`} />
+          <span>Like (99%)</span>
+          {isLiked && <span className="absolute inset-0 border-2 border-emerald-400/80 rounded-xl pointer-events-none shadow-[0_0_10px_rgba(16,185,129,0.5)]" />}
         </button>
 
-        {/* Report Game Button Overlay */}
+        {/* Report Game Button */}
         <button
           onClick={() => {
             playSound('click', soundRef.current);
             triggerReport();
           }}
-          className="absolute z-30 flex items-center justify-center gap-2 text-xs font-black text-slate-300 hover:text-white transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10"
-          style={{
-            left: '55.2%',
-            top: '82.8%',
-            width: '18.2%',
-            height: '10.5%',
-          }}
+          className="absolute z-30 flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-black text-slate-300 hover:text-white transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10"
+          style={
+            isPortrait
+              ? { left: '53.4%', top: '89.4%', width: '33%', height: '5.8%' }
+              : { left: '55%', top: '85.92%', width: '18%', height: '7.77%' }
+          }
         >
-          {reportedMsg && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-xl text-amber-300 font-bold text-[11px]">
-              Reported!
-            </span>
-          )}
+          <i className="fa-solid fa-flag text-xs sm:text-sm text-slate-400" />
+          <span>{reportedMsg ? 'Reported!' : 'Report game'}</span>
         </button>
       </div>
     </div>
