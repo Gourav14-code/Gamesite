@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import BikeRacer from './pages/BikeRacer.jsx';
 import WebGame from './pages/WebGame.jsx';
+import PistolDuel from './pages/PistolDuel.jsx';
 import CyberCursor from './components/CyberCursor.jsx';
 
 export default function App() {
@@ -14,6 +15,9 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
       return 'bikeracer';
+    }
+    if (params.get('view') === 'duel' || params.get('game') === 'duel') {
+      return 'duel';
     }
     return 'portal';
   });
@@ -46,6 +50,8 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
         setView('bikeracer');
+      } else if (params.get('view') === 'duel' || params.get('game') === 'duel') {
+        setView('duel');
       } else {
         setView('portal');
       }
@@ -60,6 +66,20 @@ export default function App() {
         <BikeRacer
           onClose={!isNative ? handleCloseBike : undefined}
           onSelectGame={!isNative ? handleSelectGame : undefined}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'duel') {
+    return (
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#0c0e12] select-none touch-none flex items-center justify-center p-0">
+        <PistolDuel
+          onClose={() => {
+            setView('portal');
+            if (!isNative) window.history.pushState({}, '', window.location.pathname);
+          }}
+          isFullscreen={true}
         />
       </div>
     );

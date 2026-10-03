@@ -1,22 +1,26 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   PISTOL DUEL — EXACT RETRO-FUTURISTIC ARCADE CONSOLE INTERFACE
-   Strict 1:1 recreation of the physical industrial arcade cabinet photograph:
-   - Heavy-metal weathered chassis with 45° chamfered corners & mechanical grooves
-   - Side flanks with 3 angled ventilation slots & ambient cyan/red rim lighting
-   - Top-left circular dial with glowing red crosshair target
-   - Top-right tactical scope button & red beveled close button
-   - Centered raised gold/bronze plaque with engraved crossed revolvers & "Pistol Duel"
-   - Recessed horizontal cyan (left) and red (right) neon glow tubes
-   - Multi-step beveled CRT monitor bezel with coordinate grid
-   - In-screen HUD: P1 cyan hearts (3 full, 1 empty), CPU red hearts (2 full)
-   - Secondary status capsule: LEVEL 2 | 🪙 100 | Audio | Battery
-   - Red CPU gun (top-left) with [CPU] badge & Gold Player gun (bottom-right) with [PLAYER] badge
-   - 22-dot trajectory line transitioning from red to amber to gold with muzzle aura
-   - Recessed instruction slot: "TAP TO SHOOT — MASTER THE RECOIL FOR THE NEXT LEVEL!"
-   - Lower deck tactile physical buttons: "Like (99%)" and "Report game"
-   - Rigid-body recoil physics, spin torque, bouncing, shell casings, hit particles
+   PISTOL DUEL — 1:1 RECREATION OF THE RETRO-FUTURISTIC ARCADE CONSOLE (IMAGE 1)
+   ═══════════════════════════════════════════════════════════════════════════════
+   Strict, pixel-accurate visual implementation matching the physical reference:
+   1. Multi-layered heavy gunmetal chassis with 45° chamfered corners & rivets
+   2. Left side: Vertical brushed gunmetal wing with 3 milled louvers + CYAN rim glow
+   3. Right side: Vertical brushed gunmetal wing with 3 milled louvers + RED rim glow
+   4. Top-left: Circular beveled housing with red crosshair target reticle
+   5. Top-right: Square tactical scope button [ ⌖ ] and red beveled exit button ✕
+   6. Top-center: Raised heavy brass/gold plaque with 4 hex bolts, chiseled gold
+      "Pistol Duel" serif lettering, and antique crossed revolvers sculpture
+   7. Top lights: Recessed glowing Cyan (left) and Red (right) neon light bars
+   8. CRT Arena: Compact technical grid (28px cyan-grey lines), dark vignette
+   9. CPU Gun (Top-Left): Large illustrated 3D Crimson Red pistol + [CPU] badge
+   10. Player Gun (Bottom-Right): Large illustrated 3D Golden-Orange pistol + [PLAYER] badge
+   11. Trajectory: Permanent 24-dot glowing path (Red → Orange → Yellow) with muzzle aura
+   12. In-Screen HUD: P1 cyan hearts (3 full, 1 empty), CPU red hearts (2 full),
+       and status pill (LEVEL 2 | 🪙 100 | 🔊 | 🔋)
+   13. Bottom instruction slot: "TAP TO SHOOT — MASTER THE RECOIL FOR THE NEXT LEVEL!"
+   14. Bottom tactile buttons: Physical brushed-steel "Like (99%)" and "Report game"
+   15. 2D rigid-body recoil physics, spin torque, bouncing, shell casings, hit particles
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 // ── 12 Levels Configuration ───────────────────────────────────────────────────
@@ -35,7 +39,7 @@ const LEVELS = [
   { level: 12, name: 'Legendary Boss', playerMaxHp: 4, cpuHp: 5, cpuDelay: 700,  cpuTol: 0.13, coins: 750 },
 ];
 
-// ── Cross-Browser Safe Rounded Rect Helper ────────────────────────────────────
+// ── Cross-Browser Rounded Rect Helper ─────────────────────────────────────────
 function drawRoundRect(ctx, x, y, w, h, r = 4) {
   const rad = Math.min(Math.min(w / 2, h / 2), typeof r === 'number' ? r : (Array.isArray(r) ? r[0] : 4));
   ctx.beginPath();
@@ -77,21 +81,21 @@ function playSound(type, soundOn = true) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(560, now);
-      osc.frequency.exponentialRampToValueAtTime(70, now + 0.14);
-      gain.gain.setValueAtTime(0.28, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.frequency.setValueAtTime(580, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.15);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.14);
+      osc.stop(now + 0.15);
     } else if (type === 'shoot_cpu') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.setValueAtTime(440, now);
       osc.frequency.exponentialRampToValueAtTime(80, now + 0.16);
-      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.setValueAtTime(0.24, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -101,9 +105,9 @@ function playSound(type, soundOn = true) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1450, now);
-      osc.frequency.exponentialRampToValueAtTime(850, now + 0.05);
-      gain.gain.setValueAtTime(0.14, now);
+      osc.frequency.setValueAtTime(1500, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+      gain.gain.setValueAtTime(0.15, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -113,7 +117,7 @@ function playSound(type, soundOn = true) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(290, now);
+      osc.frequency.setValueAtTime(300, now);
       osc.frequency.exponentialRampToValueAtTime(30, now + 0.22);
       gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
@@ -127,7 +131,7 @@ function playSound(type, soundOn = true) {
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.22, now + idx * 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -140,7 +144,7 @@ function playSound(type, soundOn = true) {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(260, now);
       osc.frequency.exponentialRampToValueAtTime(45, now + 0.45);
-      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -150,8 +154,8 @@ function playSound(type, soundOn = true) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now);
-      gain.gain.setValueAtTime(0.08, now);
+      osc.frequency.setValueAtTime(850, now);
+      gain.gain.setValueAtTime(0.09, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -167,17 +171,17 @@ function normAngle(a) {
   return a;
 }
 
-// ── Realistic 2D Gun Drawing (Red CPU / Golden-Orange Player) ─────────────────
+// ── Realistic 3D Illustrated Pistol Drawing (Strict match to Image 1) ─────────
 function renderArcadeGun(ctx, gun, isPlayer) {
   const GL = gun.length;
   const GH = gun.height;
 
-  // Colors matching reference image:
-  // Player: Polished Golden/Orange metallic with amber accents
-  // CPU: Deep metallic Crimson Red with dark red accents
-  const col = isPlayer ? '#f59e0b' : '#ef4444';
-  const accent = isPlayer ? '#b45309' : '#991b1b';
-  const highlight = isPlayer ? '#fde68a' : '#fca5a5';
+  // Exact color palettes from Image 1:
+  // Player: Lustrous metallic Golden-Orange with bright brass & white accents
+  // CPU: Deep metallic Crimson Red with black grip & polished steel highlights
+  const baseCol = isPlayer ? '#f59e0b' : '#ef4444';
+  const shadowCol = isPlayer ? '#92400e' : '#991b1b';
+  const highlightCol = isPlayer ? '#fef08a' : '#fca5a5';
 
   ctx.save();
   ctx.translate(gun.x, gun.y);
@@ -188,78 +192,86 @@ function renderArcadeGun(ctx, gun, isPlayer) {
     ctx.globalAlpha = 0.35;
   }
 
-  // Gun Drop Shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.7)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 3;
+  // Gun Drop Shadow on CRT glass
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 4;
 
-  // 1. Grip / Handle (Dark textured metal with white base accent on player)
-  ctx.fillStyle = '#1c1917';
-  drawRoundRect(ctx, -GL * 0.32, GH * 0.1, GL * 0.28, GH * 0.85, 4);
+  // 1. Grip / Handle (Dark heavy textured metal)
+  ctx.fillStyle = '#141416';
+  drawRoundRect(ctx, -GL * 0.34, GH * 0.1, GL * 0.3, GH * 0.9, 4);
   ctx.fill();
 
-  // White base accent on player gun grip (as seen in reference image)
+  // White base accent on Player grip (distinctive visual in Image 1!)
   if (isPlayer) {
     ctx.fillStyle = '#f8fafc';
-    drawRoundRect(ctx, -GL * 0.26, GH * 0.8, GL * 0.16, GH * 0.18, 2);
+    drawRoundRect(ctx, -GL * 0.28, GH * 0.82, GL * 0.18, GH * 0.18, 2);
     ctx.fill();
   }
 
-  // Grip checkering lines
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 1;
+  // Grip Checkering Grooves
+  ctx.strokeStyle = shadowCol;
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(-GL * 0.3, GH * 0.35);
-  ctx.lineTo(-GL * 0.08, GH * 0.35);
-  ctx.moveTo(-GL * 0.3, GH * 0.6);
+  ctx.moveTo(-GL * 0.32, GH * 0.36);
+  ctx.lineTo(-GL * 0.08, GH * 0.36);
+  ctx.moveTo(-GL * 0.32, GH * 0.6);
   ctx.lineTo(-GL * 0.08, GH * 0.6);
   ctx.stroke();
 
-  // 2. Trigger Guard
-  ctx.strokeStyle = '#78716c';
-  ctx.lineWidth = 1.8;
+  // 2. Trigger Guard & Trigger
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(-GL * 0.02, GH * 0.28, GH * 0.28, 0, Math.PI);
+  ctx.arc(-GL * 0.02, GH * 0.28, GH * 0.3, 0, Math.PI);
   ctx.stroke();
 
-  // 3. Lower Receiver
-  ctx.fillStyle = accent;
-  ctx.fillRect(-GL * 0.35, -GH * 0.1, GL * 0.65, GH * 0.45);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(-GL * 0.06, GH * 0.18, 3, GH * 0.25);
 
-  // 4. Slide / Upper Barrel (Glossy Golden / Red Metallic)
+  // 3. Lower Frame / Receiver
+  ctx.fillStyle = shadowCol;
+  ctx.fillRect(-GL * 0.36, -GH * 0.1, GL * 0.68, GH * 0.45);
+
+  // 4. Slide / Upper Barrel (Glossy 3D Metallic)
   ctx.shadowBlur = 0;
-  const slideGrad = ctx.createLinearGradient(0, -GH * 0.55, 0, GH * 0.15);
-  slideGrad.addColorStop(0, highlight);
-  slideGrad.addColorStop(0.35, col);
-  slideGrad.addColorStop(1, accent);
+  const slideGrad = ctx.createLinearGradient(0, -GH * 0.58, 0, GH * 0.15);
+  slideGrad.addColorStop(0, highlightCol);
+  slideGrad.addColorStop(0.3, baseCol);
+  slideGrad.addColorStop(0.85, shadowCol);
+  slideGrad.addColorStop(1, '#1e1b18');
   ctx.fillStyle = slideGrad;
-  drawRoundRect(ctx, -GL * 0.36, -GH * 0.55, GL * 0.86, GH * 0.55, 3);
+  drawRoundRect(ctx, -GL * 0.38, -GH * 0.58, GL * 0.9, GH * 0.58, 3);
   ctx.fill();
 
-  // Rear slide serrations
-  ctx.fillStyle = '#0f172a';
-  for (let s = -GL * 0.32; s < -GL * 0.16; s += 3.5) {
-    ctx.fillRect(s, -GH * 0.5, 1.8, GH * 0.4);
+  // Slide top bevel highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillRect(-GL * 0.36, -GH * 0.56, GL * 0.86, 2);
+
+  // Rear Slide Serrations
+  ctx.fillStyle = '#090a0f';
+  for (let s = -GL * 0.34; s < -GL * 0.15; s += 4) {
+    ctx.fillRect(s, -GH * 0.52, 2, GH * 0.44);
   }
 
   // 5. Extended Steel Barrel Tip & Muzzle Crown
-  ctx.fillStyle = '#262626';
-  ctx.fillRect(GL * 0.5, -GH * 0.35, GL * 0.12, GH * 0.3);
+  ctx.fillStyle = '#1e232d';
+  ctx.fillRect(GL * 0.52, -GH * 0.36, GL * 0.12, GH * 0.32);
 
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(GL * 0.62, -GH * 0.2, GH * 0.14, 0, Math.PI * 2);
+  ctx.arc(GL * 0.64, -GH * 0.2, GH * 0.14, 0, Math.PI * 2);
   ctx.fill();
 
-  // Sights
+  // Front & Rear Sights
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(GL * 0.46, -GH * 0.66, 2.5, 3.5);
-  ctx.fillRect(-GL * 0.34, -GH * 0.66, 2.5, 3.5);
+  ctx.fillRect(GL * 0.48, -GH * 0.7, 3, 4);
+  ctx.fillRect(-GL * 0.36, -GH * 0.7, 3, 4);
 
   // Ejection Port
-  ctx.fillStyle = '#171717';
-  ctx.fillRect(-GL * 0.05, -GH * 0.52, GL * 0.22, GH * 0.22);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-GL * 0.05, -GH * 0.54, GL * 0.24, GH * 0.22);
 
   ctx.restore();
 }
@@ -274,7 +286,7 @@ export default function PistolDuel({
   onReport: externalOnReport,
 }) {
   // Gameplay State
-  const [phase, setPhase] = useState('playing'); // 'playing' | 'victory' | 'failed'
+  const [phase, setPhase] = useState('playing'); // starts directly in playing state
   const [levelIdx, setLevelIdx] = useState(1);   // Default Level 2 (matches image 'LEVEL 2')
   const [coins, setCoins] = useState(100);       // Matches image '100' coins
   const [soundOn, setSoundOn] = useState(true);
@@ -315,23 +327,23 @@ export default function PistolDuel({
       setTimeout(() => setReportedMsg(false), 2500);
     });
 
-  // ── Spawn Gun Initial State ───────────────────────────────────────────────
+  // ── Spawn Gun Initial State (Matches Exact Positions in Image 1) ───────────
   const initLevelState = useCallback((lIdx, W, H) => {
     const cfg = LEVELS[Math.min(lIdx, LEVELS.length - 1)];
 
-    // Target gun size matching arcade monitor proportion
-    const gunWidth = Math.max(38, Math.min(56, W * 0.11));
+    // Target gun size: prominent and clear, ~13-15% of width
+    const gunWidth = Math.max(54, Math.min(82, W * 0.135));
     const gunHeight = gunWidth * 0.44;
     const radius = gunWidth * 0.48;
 
-    // CPU Gun (Red) - Top Left (matches reference image layout: ~x=18%, y=28%)
+    // CPU Gun (Red) - Top Left (around x: 17%, y: 28% of arena)
     const cpu = {
-      x: W * 0.18,
+      x: W * 0.17,
       y: H * 0.28,
       vx: 0,
       vy: 0,
-      angle: 0.55,               // Aiming down-right toward player
-      spin: -0.6,                // Smooth gentle rotation
+      angle: 0.58,               // Aiming down-right toward player
+      spin: -0.5,                // Smooth natural rotation
       length: gunWidth,
       height: gunHeight,
       radius,
@@ -343,14 +355,14 @@ export default function PistolDuel({
       timer: cfg.cpuDelay,
     };
 
-    // Player Gun (Yellow/Orange) - Bottom Right (matches reference image layout: ~x=82%, y=72%)
+    // Player Gun (Yellow/Orange) - Bottom Right (around x: 82%, y: 72% of arena)
     const player = {
       x: W * 0.82,
       y: H * 0.72,
       vx: 0,
       vy: 0,
-      angle: Math.PI + 0.55,     // Aiming up-left toward CPU
-      spin: 0.7,                 // Smooth gentle rotation
+      angle: Math.PI + 0.58,     // Aiming up-left toward CPU
+      spin: 0.6,                 // Smooth natural rotation
       length: gunWidth,
       height: gunHeight,
       radius,
@@ -405,32 +417,30 @@ export default function PistolDuel({
     const s = stateRef.current;
     const p = s.player;
     const now = performance.now();
-    if (now - s.lastFiredTime < 240) return; // Fire rate limiter
+    if (now - s.lastFiredTime < 240) return; // Fire rate limit
     s.lastFiredTime = now;
 
     playSound('shoot_player', soundRef.current);
 
-    // Bullet velocity along current muzzle vector
-    const muzzleDist = p.length * 0.62;
+    // Spawn Bullet at muzzle
+    const muzzleDist = p.length * 0.64;
     const bx = p.x + Math.cos(p.angle) * muzzleDist;
     const by = p.y + Math.sin(p.angle) * muzzleDist;
-    const bSpeed = 680;
-    const bvx = Math.cos(p.angle) * bSpeed;
-    const bvy = Math.sin(p.angle) * bSpeed;
+    const bSpeed = 700;
 
     s.bullets.push({
       x: bx,
       y: by,
-      vx: bvx,
-      vy: bvy,
+      vx: Math.cos(p.angle) * bSpeed,
+      vy: Math.sin(p.angle) * bSpeed,
       isPlayer: true,
       bounces: 0,
       maxBounces: 3,
       trail: [],
     });
 
-    // Recoil Impulse (opposite to bullet)
-    const recoilForce = 210;
+    // Recoil Force (opposite to muzzle direction)
+    const recoilForce = 220;
     p.vx -= Math.cos(p.angle) * recoilForce;
     p.vy -= Math.sin(p.angle) * recoilForce;
 
@@ -438,19 +448,19 @@ export default function PistolDuel({
     const torque = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 4.5 + 4.5);
     p.spin += torque;
 
-    // Eject Shell Casing
+    // Eject Brass Shell Casing
     const shellAngle = p.angle - Math.PI / 2 + (Math.random() - 0.5) * 0.4;
     s.ejectedShells.push({
       x: p.x,
       y: p.y,
-      vx: Math.cos(shellAngle) * 90 - p.vx * 0.2,
-      vy: Math.sin(shellAngle) * 90 - p.vy * 0.2,
+      vx: Math.cos(shellAngle) * 95 - p.vx * 0.2,
+      vy: Math.sin(shellAngle) * 95 - p.vy * 0.2,
       rot: p.angle,
       spin: (Math.random() - 0.5) * 20,
       life: 1.0,
     });
 
-    // Muzzle Smoke & Flash Particles
+    // Muzzle Smoke & Sparks
     for (let i = 0; i < 9; i++) {
       const sp = Math.random() * 80 + 30;
       const spread = p.angle + (Math.random() - 0.5) * 0.55;
@@ -501,7 +511,7 @@ export default function PistolDuel({
     resize();
     window.addEventListener('resize', resize);
 
-    // Physics constants
+    // Physics parameters
     const LINEAR_DRAG = 0.982;
     const ANGULAR_DRAG = 0.985;
     const BOUNCE_RESTITUTION = 0.78;
@@ -534,7 +544,7 @@ export default function PistolDuel({
 
           if (player.flash > 0) player.flash--;
 
-          // Ghost trail record
+          // Ghost trail
           if (ts - player.lastGhostTs > 55) {
             player.ghosts.push({
               x: player.x,
@@ -549,7 +559,7 @@ export default function PistolDuel({
           player.ghosts.forEach((g) => { g.alpha -= 0.03; });
           player.ghosts = player.ghosts.filter((g) => g.alpha > 0.05);
 
-          // Player Boundary Collisions
+          // Player Wall Bounce
           const pad = player.radius + 4;
           if (player.x < pad) {
             player.x = pad;
@@ -597,7 +607,7 @@ export default function PistolDuel({
           cpu.ghosts.forEach((g) => { g.alpha -= 0.03; });
           cpu.ghosts = cpu.ghosts.filter((g) => g.alpha > 0.05);
 
-          // CPU Boundary Collisions
+          // CPU Wall Bounce
           const cpuPad = cpu.radius + 4;
           if (cpu.x < cpuPad) {
             cpu.x = cpuPad;
@@ -614,7 +624,7 @@ export default function PistolDuel({
             cpu.vy = -Math.abs(cpu.vy) * BOUNCE_RESTITUTION;
           }
 
-          // CPU AI Targeting & Firing
+          // CPU AI Tracking & Shooting
           if (phaseRef.current === 'playing') {
             cpu.timer -= dt * 1000;
             const targetAngle = Math.atan2(player.y - cpu.y, player.x - cpu.x);
@@ -624,9 +634,9 @@ export default function PistolDuel({
               cpu.timer = cfg.cpuDelay + (Math.random() - 0.5) * 500;
               playSound('shoot_cpu', soundRef.current);
 
-              const cbx = cpu.x + Math.cos(cpu.angle) * cpu.length * 0.62;
-              const cby = cpu.y + Math.sin(cpu.angle) * cpu.length * 0.62;
-              const cbSpeed = 620;
+              const cbx = cpu.x + Math.cos(cpu.angle) * cpu.length * 0.64;
+              const cby = cpu.y + Math.sin(cpu.angle) * cpu.length * 0.64;
+              const cbSpeed = 640;
 
               s.bullets.push({
                 x: cbx,
@@ -667,7 +677,7 @@ export default function PistolDuel({
             b.x += b.vx * dt;
             b.y += b.vy * dt;
 
-            // Bounce on boundaries
+            // Bounces on borders
             let bounced = false;
             if (b.x < 4 || b.x > W - 4) {
               b.vx = -b.vx;
@@ -780,7 +790,7 @@ export default function PistolDuel({
           ctx.fillStyle = '#080a10';
           ctx.fillRect(0, 0, W, H);
 
-          // 2. Technical Coordinate Grid (exact match to reference image)
+          // 2. High-Precision Technical Grid (Exact match to Image 1)
           ctx.strokeStyle = 'rgba(70, 95, 120, 0.22)';
           ctx.lineWidth = 1;
           const step = 28;
@@ -797,33 +807,37 @@ export default function PistolDuel({
             ctx.stroke();
           }
 
-          // 3. Trajectory Dots Line (22 dots connecting CPU and Player)
-          const numDots = 22;
+          // 3. Clear Dotted Trajectory Connection Path (Exact match to Image 1!)
+          // 24 glowing dots smoothly transitioning: Crimson Red → Orange → Yellow Gold
+          const numDots = 24;
           for (let d = 1; d < numDots; d++) {
             const t = d / numDots;
             const dotX = cpu.x + (player.x - cpu.x) * t;
             const dotY = cpu.y + (player.y - cpu.y) * t;
 
-            // Interpolate color from Red (near CPU) to Orange to Golden Yellow (near Player)
             let dotCol = '#ef4444';
-            let dotGlow = 'rgba(239, 68, 68, 0.5)';
-            if (t > 0.68) {
+            let dotGlow = 'rgba(239, 68, 68, 0.6)';
+            let dotR = 2.5;
+
+            if (t > 0.72) {
               dotCol = '#fde047';
-              dotGlow = 'rgba(253, 224, 71, 0.8)';
-            } else if (t > 0.45) {
+              dotGlow = 'rgba(253, 224, 71, 0.9)';
+              dotR = t > 0.92 ? 4.5 : 3.2; // Extra large glowing dot right at Player muzzle
+            } else if (t > 0.48) {
               dotCol = '#f59e0b';
-              dotGlow = 'rgba(245, 158, 11, 0.6)';
+              dotGlow = 'rgba(245, 158, 11, 0.7)';
+              dotR = 2.8;
             } else if (t > 0.25) {
               dotCol = '#f97316';
-              dotGlow = 'rgba(249, 115, 22, 0.5)';
+              dotGlow = 'rgba(249, 115, 22, 0.6)';
             }
 
             ctx.save();
             ctx.shadowColor = dotGlow;
-            ctx.shadowBlur = t > 0.85 ? 10 : 5;
+            ctx.shadowBlur = t > 0.88 ? 12 : 6;
             ctx.fillStyle = dotCol;
             ctx.beginPath();
-            ctx.arc(dotX, dotY, t > 0.9 ? 3.5 : 2.5, 0, Math.PI * 2);
+            ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           }
@@ -877,22 +891,22 @@ export default function PistolDuel({
             ctx.restore();
           });
 
-          // 7. Guns (Red CPU & Gold Player)
+          // 7. Large Illustrated 3D Guns (Red CPU on Left, Gold Player on Right)
           renderArcadeGun(ctx, player, true);
           renderArcadeGun(ctx, cpu, false);
 
-          // 8. Gun Badges ([CPU] and [PLAYER] badges matching reference image)
+          // 8. Floating Badges ([CPU] and [PLAYER] exactly matching Image 1)
           const renderArcadeBadge = (txt, gun, isPlayer) => {
             ctx.save();
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
             const col = isPlayer ? '#f59e0b' : '#ef4444';
-            const badgeY = gun.y - gun.radius - 12;
+            const badgeY = gun.y - gun.radius - 14;
 
             ctx.strokeStyle = col;
-            ctx.lineWidth = 1;
-            ctx.fillStyle = 'rgba(10, 14, 23, 0.85)';
-            drawRoundRect(ctx, gun.x - 24, badgeY - 9, 48, 14, 3);
+            ctx.lineWidth = 1.2;
+            ctx.fillStyle = 'rgba(10, 14, 23, 0.9)';
+            drawRoundRect(ctx, gun.x - 26, badgeY - 10, 52, 16, 4);
             ctx.fill();
             ctx.stroke();
 
@@ -906,7 +920,7 @@ export default function PistolDuel({
           // 9. Floating Damage Skulls
           s.damageSkulls.forEach((sk) => {
             ctx.save();
-            ctx.font = '14px sans-serif';
+            ctx.font = '15px sans-serif';
             ctx.textAlign = 'center';
             ctx.globalAlpha = Math.max(0, sk.alpha);
             ctx.fillStyle = sk.col;
@@ -943,22 +957,22 @@ export default function PistolDuel({
 
   return (
     <div
-      className="relative w-full h-full flex items-center justify-center p-0 sm:p-2 overflow-hidden select-none touch-none"
+      className="relative w-full h-full flex items-center justify-center p-0 overflow-hidden select-none touch-none"
       style={{
-        background: 'radial-gradient(ellipse at center, #181c24 0%, #0d1015 65%, #07080a 100%)',
+        background: 'radial-gradient(ellipse at center, #181d26 0%, #0c0f15 70%, #050608 100%)',
       }}
     >
       {/* ═════════════════════════════════════════════════════════════════════
-          PHYSICAL RETRO-FUTURISTIC ARCADE CABINET CHASSIS
-          Ratio: 1000 / 540 (matches 610 / 329 reference image ~1.85:1)
+          PHYSICAL RETRO-FUTURISTIC ARCADE CABINET CONSOLE CHASSIS (IMAGE 1)
+          Exact 1.85:1 aspect ratio matching the 610 × 329 reference photograph
           ═════════════════════════════════════════════════════════════════════ */}
       <div
-        className="relative w-full max-w-[960px] aspect-[1000/540] flex items-center justify-center overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.95)]"
+        className="relative w-full max-w-[1040px] aspect-[1000/540] flex items-center justify-center overflow-hidden"
         style={{
-          filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.9))',
+          filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.95))',
         }}
       >
-        {/* ── HIGH-FIDELITY METALLIC ARCADE CONSOLE SVG FRAME ──────────────── */}
+        {/* ── HIGH-PRECISION METALLIC ARCADE CONSOLE SVG FRAME ─────────────── */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-10"
           viewBox="0 0 1000 540"
@@ -1032,7 +1046,7 @@ export default function PistolDuel({
             </filter>
           </defs>
 
-          {/* 1. OUTER HEAVY METAL CHASSIS (Chamfered 45° Corners) */}
+          {/* 1. OUTER HEAVY METAL CHASSIS (45° Chamfered Corners) */}
           <path
             d="M 50,14 
                L 360,14 
@@ -1064,16 +1078,15 @@ export default function PistolDuel({
           />
 
           {/* 3. SIDE AMBIENT NEON RIM GLOW (Cyan on Left, Red on Right) */}
-          <path d="M 14,50 L 14,490" stroke="#00f0ff" strokeWidth="4" filter="url(#cyanGlow)" opacity="0.75" />
-          <path d="M 986,50 L 986,490" stroke="#ff2244" strokeWidth="4" filter="url(#redGlow)" opacity="0.75" />
+          <path d="M 14,50 L 14,490" stroke="#00f0ff" strokeWidth="4.5" filter="url(#cyanGlow)" opacity="0.8" />
+          <path d="M 986,50 L 986,490" stroke="#ff2244" strokeWidth="4.5" filter="url(#redGlow)" opacity="0.8" />
 
-          {/* 4. SIDE FLANK VENTILATION SLOTS (3 angled milled slots each side) */}
+          {/* 4. SIDE FLANK VENTILATION LOUVERS (3 angled milled slots on each wing) */}
           {/* Left Wing Milled Slots */}
           <g fill="#0e1117" stroke="#3b4252" strokeWidth="1">
             <path d="M 38,180 L 52,166 L 56,168 L 42,182 Z" />
             <path d="M 38,250 L 52,236 L 56,238 L 42,252 Z" />
             <path d="M 38,320 L 52,306 L 56,308 L 42,322 Z" />
-            {/* Flank accent panel groove */}
             <path d="M 64,130 L 64,390" stroke="#232733" strokeWidth="2" />
             <path d="M 65,130 L 65,390" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
           </g>
@@ -1083,12 +1096,11 @@ export default function PistolDuel({
             <path d="M 962,180 L 948,166 L 944,168 L 958,182 Z" />
             <path d="M 962,250 L 948,236 L 944,238 L 958,252 Z" />
             <path d="M 962,320 L 948,306 L 944,308 L 958,322 Z" />
-            {/* Flank accent panel groove */}
             <path d="M 936,130 L 936,390" stroke="#232733" strokeWidth="2" />
             <path d="M 937,130 L 937,390" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
           </g>
 
-          {/* 5. CORNER MECHANICAL CUTS & RIVET RECESSES */}
+          {/* 5. CORNER MECHANICAL CUTS & PANEL ACCENTS */}
           {/* Top-Left Corner Cutout */}
           <path d="M 46,26 L 26,46" stroke="#10131a" strokeWidth="4" />
           <path d="M 47,27 L 27,47" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" />
@@ -1120,11 +1132,9 @@ export default function PistolDuel({
 
           {/* 7. TOP-LEFT CIRCULAR TARGET CROSSHAIR DIAL */}
           <g transform="translate(114, 48)">
-            {/* Outer Beveled Metal Ring */}
             <circle cx="0" cy="0" r="23" fill="#1e232d" stroke="#525d70" strokeWidth="2" />
             <circle cx="0" cy="0" r="20" fill="#0f1217" stroke="#12151c" strokeWidth="1.5" />
             <circle cx="0" cy="0" r="16" fill="#2a0d12" stroke="#ef4444" strokeWidth="1.8" />
-            {/* Crosshairs & Reticle */}
             <circle cx="0" cy="0" r="8" fill="none" stroke="#ef4444" strokeWidth="1.2" />
             <line x1="-15" y1="0" x2="-8" y2="0" stroke="#ef4444" strokeWidth="1.8" />
             <line x1="8" y1="0" x2="15" y2="0" stroke="#ef4444" strokeWidth="1.8" />
@@ -1146,7 +1156,6 @@ export default function PistolDuel({
               stroke="#4f596d"
               strokeWidth="1.5"
             />
-            {/* Scope / Bracket Icon */}
             <path
               d="M 8,11 L 8,8 L 11,8 M 21,8 L 24,8 L 24,11 M 8,19 L 8,22 L 11,22 M 21,22 L 24,22 L 24,19"
               stroke="#94a3b8"
@@ -1169,7 +1178,6 @@ export default function PistolDuel({
               stroke="#ef4444"
               strokeWidth="1.5"
             />
-            {/* Bold Red 'X' */}
             <line x1="9" y1="8" x2="23" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
             <line x1="23" y1="8" x2="9" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
           </g>
@@ -1177,36 +1185,30 @@ export default function PistolDuel({
           {/* 9. RECESSED NEON GLOW TUBES (Cyan Left, Red Right) */}
           {/* Cyan Left Neon Glow Tube */}
           <g>
-            {/* Dark Recessed Channel */}
             <rect x="156" y="74" width="188" height="8" rx="4" fill="#081017" stroke="#16232e" strokeWidth="1" />
-            {/* Cyan Tube Glow */}
             <rect x="159" y="76" width="182" height="4" rx="2" fill="#00e5ff" filter="url(#cyanGlow)" />
-            {/* Cyan Tube Core */}
             <rect x="159" y="76" width="182" height="4" rx="2" fill="url(#cyanTube)" />
           </g>
 
           {/* Red Right Neon Glow Tube */}
           <g>
-            {/* Dark Recessed Channel */}
             <rect x="656" y="74" width="188" height="8" rx="4" fill="#17080a" stroke="#2e1619" strokeWidth="1" />
-            {/* Red Tube Glow */}
             <rect x="659" y="76" width="182" height="4" rx="2" fill="#ff2244" filter="url(#redGlow)" />
-            {/* Red Tube Core */}
             <rect x="659" y="76" width="182" height="4" rx="2" fill="url(#redTube)" />
           </g>
 
           {/* 10. TOP-CENTER RAISED GOLD/BRONZE PLAQUE WITH CROSSED REVOLVERS */}
           <g transform="translate(370, 6)" filter="url(#goldDropShadow)">
-            {/* Crossed Revolvers Sculpture on top of Plaque */}
+            {/* Crossed Revolvers Sculpture */}
             <g transform="translate(130, 2) scale(0.95)" fill="url(#goldTextGrad)" stroke="#5c2e0b" strokeWidth="0.8">
-              {/* Left Revolver (pointing down-right) */}
+              {/* Left Revolver */}
               <g transform="rotate(-32)">
                 <rect x="-18" y="-4" width="28" height="6" rx="1.5" />
                 <rect x="-14" y="2" width="8" height="11" rx="2" />
                 <circle cx="-5" cy="-1" r="4.5" />
                 <rect x="10" y="-3" width="16" height="4" rx="1" />
               </g>
-              {/* Right Revolver (pointing down-left) */}
+              {/* Right Revolver */}
               <g transform="rotate(32)">
                 <rect x="-10" y="-4" width="28" height="6" rx="1.5" />
                 <rect x="-6" y="2" width="8" height="11" rx="2" />
@@ -1256,7 +1258,6 @@ export default function PistolDuel({
           </g>
 
           {/* 11. INNER SCREEN BEZEL (Multi-layered 3D chamfered frame) */}
-          {/* Outer Bevel Frame */}
           <path
             d="M 112,106 L 888,106 L 902,120 L 902,402 L 888,416 L 112,416 L 98,402 L 98,120 Z"
             fill="url(#innerBezelGrad)"
@@ -1334,7 +1335,7 @@ export default function PistolDuel({
           <div ref={screenAreaRef} className="w-full h-full relative">
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
 
-            {/* ── Screen Status Header Overlay ────────────────────────────── */}
+            {/* ── Screen Status Header Overlay (Image 1 Layout) ───────────── */}
             <div className="absolute top-0 left-0 right-0 px-3 sm:px-5 pt-2 pb-1 flex items-start justify-between pointer-events-none z-20">
               {/* Upper-Left: P1 with 4 hearts (3 cyan filled, 1 empty outline) */}
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1411,7 +1412,7 @@ export default function PistolDuel({
               </div>
             </div>
 
-            {/* Victory Modal */}
+            {/* Victory Modal Overlay */}
             {phase === 'victory' && (
               <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center">
                 <div className="text-4xl sm:text-5xl animate-bounce mb-1">🏆</div>
@@ -1446,7 +1447,7 @@ export default function PistolDuel({
               </div>
             )}
 
-            {/* Failed Modal */}
+            {/* Failed Modal Overlay */}
             {phase === 'failed' && (
               <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center">
                 <div className="text-4xl sm:text-5xl mb-1">💀</div>
