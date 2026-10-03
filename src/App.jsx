@@ -1,0 +1,76 @@
+import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import BikeRacer from './pages/BikeRacer.jsx';
+import WebGame from './pages/WebGame.jsx';
+import CyberCursor from './components/CyberCursor.jsx';
+
+export default function App() {
+  const isNative = Capacitor.isNativePlatform();
+
+  // In native Android app, directly start Bike Racer.
+  // In web browser (desktop/laptop/mobile), default to the main gaming homepage/portal!
+  const [view, setView] = useState(() => {
+    if (isNative) return 'bikeracer';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
+      return 'bikeracer';
+    }
+    return 'portal';
+  });
+
+  const handleSelectGame = (gameId) => {
+    if (gameId === -1) {
+      setView('bikeracer');
+      if (!isNative) {
+        window.history.pushState({}, '', '?view=bikeracer');
+      }
+    } else {
+      setView('portal');
+      if (!isNative) {
+        window.history.pushState({}, '', window.location.pathname);
+      }
+    }
+  };
+
+  const handleCloseBike = () => {
+    setView('portal');
+    if (!isNative) {
+      window.history.pushState({}, '', window.location.pathname);
+    }
+  };
+
+  // Sync browser back/forward buttons
+  useEffect(() => {
+    if (isNative) return;
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
+        setView('bikeracer');
+      } else {
+        setView('portal');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isNative]);
+
+  if (view === 'bikeracer') {
+    return (
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-black select-none touch-none">
+        <BikeRacer
+          onClose={!isNative ? handleCloseBike : undefined}
+          onSelectGame={!isNative ? handleSelectGame : undefined}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <CyberCursor />
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
+        <WebGame onLaunchBike={() => handleSelectGame(-1)} />
+      </div>
+    </>
+  );
+}

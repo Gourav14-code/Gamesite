@@ -1,0 +1,85 @@
+{
+  "name": "AutoTest Playground - AI & Robotic Automation Hub",
+  "short_name": "AutoTest Hub",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#030712",
+  "theme_color": "#00f3ff",
+  "description": "Interactive QA automation testing labs, REST API mock testing playground, and retro Super Puppy Bros arcade game.",
+  "orientation": "any",
+  "categories": ["developer", "utilities", "productivity", "games"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play Super Puppy Bros",
+      "short_name": "Play Game",
+      "description": "Launch retro NES Super Puppy Bros arcade game",
+      "url": "/play",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Automation Form Labs",
+      "short_name": "Form Labs",
+      "description": "Test dynamic form controls and complex inputs",
+      "url": "/forms",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "REST API Tester",
+      "short_name": "API Tester",
+      "description": "Mock API endpoint tester and schema validator",
+      "url": "/api-tester",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dynamic Waits & Timing",
+      "short_name": "Dynamic Labs",
+      "description": "Asynchronous delays, lazy loading, and race condition tests",
+      "url": "/dynamic",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/cursor/cyber-circuit-animated-cursor/poster.gif",
+      "sizes": "651x326",
+      "type": "image/gif",
+      "form_factor": "wide",
+      "label": "AutoTest Hub Cyber Interface"
+    }
+  ]
+}

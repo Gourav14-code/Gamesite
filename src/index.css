@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #030712;
+    color: #f3f4f6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(1.5deg); }
+}
+
+@keyframes droneHover {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(-10px) translateX(6px); }
+}
+
+/* Active Hand Wave Motion */
+@keyframes armWaveMotion {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-28deg); }
+  45% { transform: rotate(12deg); }
+  70% { transform: rotate(-32deg); }
+  85% { transform: rotate(5deg); }
+  20% { transform: rotate(-30deg); }
+  45% { transform: rotate(14deg); }
+  70% { transform: rotate(-34deg); }
+  85% { transform: rotate(6deg); }
+}
+
+@keyframes leftArmIdle {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes robotCelebration {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-24px) scale(1.08) rotate(-4deg); }
+  40% { transform: translateY(-10px) scale(1.04) rotate(4deg); }
+  60% { transform: translateY(-18px) scale(1.06) rotate(-2deg); }
+  80% { transform: translateY(-4px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes eyeGlow {
+  0% { opacity: 0.6; filter: drop-shadow(0 0 2px #00f3ff); }
+  100% { opacity: 1; filter: drop-shadow(0 0 12px #00f3ff); }
+}
+
+@keyframes beaconPulse {
+  0% { filter: drop-shadow(0 0 2px #00f3ff); opacity: 0.7; }
+  100% { filter: drop-shadow(0 0 14px #ec4899); opacity: 1; }
+}
+
+@keyframes coreBeat {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #00f3ff); }
+  50% { transform: scale(1.2); filter: drop-shadow(0 0 18px #ec4899); }
+}
+
+@keyframes baseGlow {
+  0% { opacity: 0.3; transform: scaleX(0.9); }
+  100% { opacity: 0.95; transform: scaleX(1.15); filter: drop-shadow(0 0 15px #00f3ff); }
+}
+
+@keyframes glowPulse {
+  0% { opacity: 0.25; filter: drop-shadow(0 0 15px rgba(0, 243, 255, 0.2)); }
+  100% { opacity: 0.7; filter: drop-shadow(0 0 35px rgba(168, 85, 247, 0.5)); }
+}
+
+.animate-float {
+  animation: float 4.5s ease-in-out infinite;
+}
+
+.animate-drone-hover {
+  animation: droneHover 3.5s ease-in-out infinite;
+}
+
+.animate-robot-wave {
+  animation: armWaveMotion 1.2s ease-in-out infinite;
+}
+
+/* Robot Right Arm - ONLY waves when hovered (or when wave-active class is added) */
+.robot-arm-right {
+  transform-origin: 190px 140px;
+  animation: armWaveMotion 1.4s ease-in-out infinite;
+  transform: rotate(0deg);
+  transition: transform 0.4s ease;
+}
+
+.robot-glass-pod:hover .robot-arm-right,
+.robot-arm-right.wave-active {
+  animation: armWaveMotion 1.2s ease-in-out infinite;
+}
+
+.animate-left-arm {
+  transform-origin: 90px 140px;
+  animation: leftArmIdle 2.8s ease-in-out infinite;
+}
+
+.animate-robot-jump {
+  animation: robotCelebration 0.85s ease-out;
+}
+
+.robot-eye-pulse {
+  animation: eyeGlow 1.2s ease-in-out infinite alternate;
+}
+
+.robot-beacon-pulse {
+  animation: beaconPulse 0.9s ease-in-out infinite alternate;
+}
+
+.robot-core-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: coreBeat 1.2s ease-in-out infinite;
+}
+
+.robot-base-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: baseGlow 2.5s ease-in-out infinite alternate;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 4s ease-in-out infinite alternate;
+}
+
+/* Cyber Grid Background */
+.bg-cyber-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.07) 1px, transparent 1px);
+}
+
+html.light .bg-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+}
+
+/* Hero Gradient Text */
+.gradient-text-hero {
+  background: linear-gradient(135deg, #00f3ff 0%, #a855f7 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 35px rgba(168, 85, 247, 0.3);
+}
+
+/* Glass Cards */
+.glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 243, 255, 0.35);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+}
+
+/* Glass Navbar */
+.glass-nav {
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html.light .glass-nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Canvas Styles */
+#particleCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-fluid-container {
+  position: relative;
+  overflow: hidden;
+}
+
+#slowRippleCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Robot Glass Pod */
+.robot-glass-pod {
+  position: relative;
+  border-radius: 2rem;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+  box-shadow: inset 0 0 35px rgba(0, 243, 255, 0.08), 0 0 30px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.robot-glass-pod:hover {
+  border-color: rgba(0, 243, 255, 0.6);
+  box-shadow: inset 0 0 45px rgba(0, 243, 255, 0.18), 0 0 35px rgba(0, 243, 255, 0.2);
+}
+
+.blueprint-line {
+  stroke: rgba(0, 243, 255, 0.18);
+  stroke-dasharray: 4 4;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* 3D Bike Racer Golden +10 Score Popup */
+@keyframes goldPopFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% - 10px)) scale(1.08);
+  }
+  65% {
+    opacity: 0.95;
+    transform: translate(-50%, calc(-50% - 26px)) scale(1.0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 42px)) scale(0.92);
+  }
+}
+
+/* 3D Bike Racer Arcade Starting Countdown (3 -> 2 -> 1 -> GO!) */
+@keyframes countdownPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.32);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+}
+
+
