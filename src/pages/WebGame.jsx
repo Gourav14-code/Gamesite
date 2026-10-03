@@ -706,103 +706,114 @@ export default function WebGame({ onLaunchBike }) {
       {/* ── Modal ────────────────────────────────────────────────────────── */}
       {modal && (
         <div
-          className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-0 sm:p-2 md:p-6 backdrop-blur-md"
+          className="fixed inset-0 bg-slate-950/85 z-50 flex items-center justify-center p-0 sm:p-2 md:p-4 backdrop-blur-md"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-slate-900 rounded-none sm:rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl border-0 sm:border sm:border-slate-700 flex flex-col" style={{ height: '100dvh', maxHeight: '680px' }}>
-            {/* Modal header */}
-            <div className="bg-slate-800/90 px-5 py-3.5 border-b border-slate-700/60 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="bg-red-500/20 text-red-400 p-2 rounded-xl text-lg">
-                  <i className={`fa-solid ${modal.icon || 'fa-gamepad'}`} />
-                </span>
-                <div>
-                  <h2 className="text-white font-extrabold text-lg md:text-xl" style={{ fontFamily: 'Fredoka, sans-serif' }}>{modal.title}</h2>
-                  <p className="text-slate-400 text-xs">
-                    {modal.duel ? 'Player vs CPU · Click to shoot · Recoil physics' : modal.bike ? 'Traffic Rider 3D · First-Person Superbike · Highway Traffic' : modal.playable ? 'Shoot targets · Aim with mouse · R to reload' : 'Coming soon!'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-700/50 transition"
-                  title="Fullscreen"
-                >
-                  <i className={`fa-solid ${fullscreen ? 'fa-compress' : 'fa-expand'} text-lg`} />
-                </button>
-                <button
-                  onClick={closeModal}
-                  className="text-slate-400 hover:text-red-400 p-2 rounded-xl hover:bg-slate-700/50 transition text-xl"
-                  title="Close"
-                >
-                  <i className="fa-solid fa-xmark" />
-                </button>
-              </div>
+          {modal.duel ? (
+            <div className="w-full max-w-5xl h-full max-h-[700px] flex items-center justify-center p-0">
+              <PistolDuel
+                onClose={closeModal}
+                onToggleFullscreen={toggleFullscreen}
+                isFullscreen={fullscreen}
+                isLiked={!!likedGames[modal.id]}
+                onToggleLike={() => setLikedGames(prev => ({ ...prev, [modal.id]: !prev[modal.id] }))}
+                onReport={() => setReportedGame(modal.id)}
+              />
             </div>
-
-            {/* Game area — explicit height so children can use 100% */}
-            <div
-              ref={gameAreaRef}
-              className="flex-1 bg-slate-950 relative overflow-hidden"
-              style={{ minHeight: 0 }}
-            >
-              {modal.duel ? (
-                <PistolDuel onClose={closeModal} />
-              ) : modal.bike ? (
-                <BikeRacer onClose={closeModal} />
-              ) : modal.playable ? (
-                <PistolGame containerRef={gameAreaRef} />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-white p-8 text-center">
-                  <i className="fa-solid fa-gamepad text-6xl text-cyan-400 mb-4 animate-bounce" />
-                  <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Fredoka, sans-serif' }}>{modal.title}</h3>
-                  <p className="text-slate-400 text-sm mb-6 max-w-sm">This game is coming soon! Try our playable games below.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setModal(GAMES_DATA[0])} className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
-                      🔫 Pistol Duel
-                    </button>
-                    <button onClick={() => setModal(GAMES_DATA[1])} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
-                      🏍️ Bike Racer
-                    </button>
+          ) : (
+            <div className="bg-slate-900 rounded-none sm:rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl border-0 sm:border sm:border-slate-700 flex flex-col" style={{ height: '100dvh', maxHeight: '680px' }}>
+              {/* Modal header */}
+              <div className="bg-slate-800/90 px-5 py-3.5 border-b border-slate-700/60 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <span className="bg-red-500/20 text-red-400 p-2 rounded-xl text-lg">
+                    <i className={`fa-solid ${modal.icon || 'fa-gamepad'}`} />
+                  </span>
+                  <div>
+                    <h2 className="text-white font-extrabold text-lg md:text-xl" style={{ fontFamily: 'Fredoka, sans-serif' }}>{modal.title}</h2>
+                    <p className="text-slate-400 text-xs">
+                      {modal.bike ? 'Traffic Rider 3D · First-Person Superbike · Highway Traffic' : modal.playable ? 'Shoot targets · Aim with mouse · R to reload' : 'Coming soon!'}
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-700/50 transition"
+                    title="Fullscreen"
+                  >
+                    <i className={`fa-solid ${fullscreen ? 'fa-compress' : 'fa-expand'} text-lg`} />
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="text-slate-400 hover:text-red-400 p-2 rounded-xl hover:bg-slate-700/50 transition text-xl"
+                    title="Close"
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
+                </div>
+              </div>
 
-            {/* Modal footer — strictly Like and Report game buttons */}
-            <div className="bg-slate-800/80 px-5 py-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400 gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setLikedGames(prev => ({ ...prev, [modal.id]: !prev[modal.id] }))}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition cursor-pointer active:scale-95 border ${
-                  likedGames[modal.id]
-                    ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                    : 'bg-slate-700 hover:bg-slate-600 border-slate-600/40 text-slate-200'
-                }`}
+              {/* Game area — explicit height so children can use 100% */}
+              <div
+                ref={gameAreaRef}
+                className="flex-1 bg-slate-950 relative overflow-hidden"
+                style={{ minHeight: 0 }}
               >
-                <i className={`fa-solid fa-thumbs-up ${likedGames[modal.id] ? 'text-emerald-400 scale-110' : 'text-emerald-400'}`} />
-                <span>Like</span>
-                <span className="text-slate-400 font-mono text-[11px]">({modal.likes})</span>
-              </button>
+                {modal.bike ? (
+                  <BikeRacer onClose={closeModal} />
+                ) : modal.playable ? (
+                  <PistolGame containerRef={gameAreaRef} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-white p-8 text-center">
+                    <i className="fa-solid fa-gamepad text-6xl text-cyan-400 mb-4 animate-bounce" />
+                    <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Fredoka, sans-serif' }}>{modal.title}</h3>
+                    <p className="text-slate-400 text-sm mb-6 max-w-sm">This game is coming soon! Try our playable games below.</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setModal(GAMES_DATA[0])} className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
+                        🔫 Pistol Duel
+                      </button>
+                      <button onClick={() => setModal(GAMES_DATA[1])} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
+                        🏍️ Bike Racer
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setReportedGame(modal.id);
-                  setTimeout(() => setReportedGame(null), 3000);
-                }}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold transition cursor-pointer active:scale-95 border ${
-                  reportedGame === modal.id
-                    ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
-                    : 'bg-slate-700/50 hover:bg-rose-500/20 hover:text-rose-300 border-slate-600/30 text-slate-400'
-                }`}
-              >
-                <i className={`fa-solid ${reportedGame === modal.id ? 'fa-check text-amber-400' : 'fa-flag text-rose-400 text-xs'}`} />
-                <span>{reportedGame === modal.id ? 'Report Submitted' : 'Report game'}</span>
-              </button>
+              {/* Modal footer — strictly Like and Report game buttons */}
+              <div className="bg-slate-800/80 px-5 py-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400 gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setLikedGames(prev => ({ ...prev, [modal.id]: !prev[modal.id] }))}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition cursor-pointer active:scale-95 border ${
+                    likedGames[modal.id]
+                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                      : 'bg-slate-700 hover:bg-slate-600 border-slate-600/40 text-slate-200'
+                  }`}
+                >
+                  <i className={`fa-solid fa-thumbs-up ${likedGames[modal.id] ? 'text-emerald-400 scale-110' : 'text-emerald-400'}`} />
+                  <span>Like</span>
+                  <span className="text-slate-400 font-mono text-[11px]">({modal.likes})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReportedGame(modal.id);
+                    setTimeout(() => setReportedGame(null), 3000);
+                  }}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold transition cursor-pointer active:scale-95 border ${
+                    reportedGame === modal.id
+                      ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                      : 'bg-slate-700/50 hover:bg-rose-500/20 hover:text-rose-300 border-slate-600/30 text-slate-400'
+                  }`}
+                >
+                  <i className={`fa-solid ${reportedGame === modal.id ? 'fa-check text-amber-400' : 'fa-flag text-rose-400 text-xs'}`} />
+                  <span>{reportedGame === modal.id ? 'Report Submitted' : 'Report game'}</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </>
