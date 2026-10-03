@@ -985,355 +985,66 @@ export default function PistolDuel({
       <div
         className={`relative w-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
           isPortrait
-            ? 'max-w-[480px] h-full max-h-[96vh] aspect-[440/720]'
-            : 'max-w-[1040px] max-h-[92vh] aspect-[1000/540]'
+            ? 'max-w-[460px] h-full max-h-[96vh] aspect-[768/1376]'
+            : 'max-w-[1040px] max-h-[92vh] aspect-[610/329]'
         }`}
         style={{
           filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.95))',
         }}
       >
-        {/* ── VECTOR GRAPHICS DEFINITIONS (Gradients & Filters) ─────────────── */}
-        <svg className="absolute w-0 h-0" style={{ position: 'absolute', width: 0, height: 0 }}>
-          <defs>
-            <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#434c5e" />
-              <stop offset="15%" stopColor="#2e3440" />
-              <stop offset="50%" stopColor="#1e222b" />
-              <stop offset="85%" stopColor="#2e3440" />
-              <stop offset="100%" stopColor="#181b22" />
-            </linearGradient>
+        {/* ── 1. AUTHENTIC PHOTOREALISTIC ARCADE CABINET CONSOLE IMAGE ─────── */}
+        <img
+          src={isPortrait ? '/images/pistol_duel_cabinet_portrait.jpg' : '/images/pistol_duel_cabinet_landscape.png'}
+          alt="Pistol Duel Arcade Console"
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-10"
+        />
 
-            <linearGradient id="innerBezelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#14171f" />
-              <stop offset="100%" stopColor="#2b313e" />
-            </linearGradient>
-
-            <linearGradient id="goldFrameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="18%" stopColor="#eab308" />
-              <stop offset="55%" stopColor="#b45309" />
-              <stop offset="85%" stopColor="#78350f" />
-              <stop offset="100%" stopColor="#451a03" />
-            </linearGradient>
-
-            <linearGradient id="goldTextGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fffbeb" />
-              <stop offset="35%" stopColor="#fde047" />
-              <stop offset="70%" stopColor="#d97706" />
-              <stop offset="100%" stopColor="#78350f" />
-            </linearGradient>
-
-            <linearGradient id="cyanTube" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="30%" stopColor="#67e8f9" />
-              <stop offset="70%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#0891b2" />
-            </linearGradient>
-
-            <linearGradient id="redTube" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="30%" stopColor="#fca5a5" />
-              <stop offset="70%" stopColor="#ef4444" />
-              <stop offset="100%" stopColor="#b91c1c" />
-            </linearGradient>
-
-            <linearGradient id="btnMetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3d4556" />
-              <stop offset="40%" stopColor="#252b36" />
-              <stop offset="100%" stopColor="#171b22" />
-            </linearGradient>
-
-            <filter id="cyanGlow" x="-20%" y="-50%" width="140%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
-            </filter>
-            <filter id="redGlow" x="-20%" y="-50%" width="140%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
-            </filter>
-            <filter id="goldDropShadow" x="-10%" y="-10%" width="120%" height="130%">
-              <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.9" />
-            </filter>
-          </defs>
-        </svg>
-
-        {/* ── 1. ULTRA HIGH-QUALITY VECTOR FRAME SVG ───────────────────────── */}
-        {isPortrait ? (
-          /* ════════ PORTRAIT MOBILE SVG CHASSIS (viewBox 0 0 440 720) ═══════ */
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-10"
-            viewBox="0 0 440 720"
-            preserveAspectRatio="none"
-          >
-            {/* Outer Heavy Metal Shell */}
-            <path
-              d="M 36,12 L 140,12 L 148,4 L 292,4 L 300,12 L 404,12 L 428,36 L 428,684 L 404,708 L 36,708 L 12,684 L 12,36 Z"
-              fill="url(#chassisGrad)"
-              stroke="#5c667a"
-              strokeWidth="2"
-            />
-            {/* Inner Lip */}
-            <path
-              d="M 40,16 L 400,16 L 424,40 L 424,680 L 400,704 L 40,704 L 16,680 L 16,40 Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="1.2"
-            />
-
-            {/* Left Cyan & Right Red Ambient Rim Glow */}
-            <path d="M 12,36 L 12,684" stroke="#00f0ff" strokeWidth="3.5" filter="url(#cyanGlow)" opacity="0.85" />
-            <path d="M 428,36 L 428,684" stroke="#ff2244" strokeWidth="3.5" filter="url(#redGlow)" opacity="0.85" />
-
-            {/* Top-Left Circular Dial */}
-            <g transform="translate(48, 38)">
-              <circle cx="0" cy="0" r="15" fill="#1e232d" stroke="#525d70" strokeWidth="1.5" />
-              <circle cx="0" cy="0" r="11" fill="#2a0d12" stroke="#ef4444" strokeWidth="1.2" />
-              <line x1="-10" y1="0" x2="-5" y2="0" stroke="#ef4444" strokeWidth="1.5" />
-              <line x1="5" y1="0" x2="10" y2="0" stroke="#ef4444" strokeWidth="1.5" />
-              <line x1="0" y1="-10" x2="0" y2="-5" stroke="#ef4444" strokeWidth="1.5" />
-              <line x1="0" y1="5" x2="0" y2="10" stroke="#ef4444" strokeWidth="1.5" />
-              <circle cx="0" cy="0" r="2" fill="#ef4444" />
-            </g>
-
-            {/* Top-Right Tactical Scope & Exit Buttons */}
-            <g transform="translate(364, 26)">
-              <rect x="0" y="0" width="24" height="24" rx="5" fill="#222834" stroke="#4f596d" strokeWidth="1.2" />
-              <circle cx="12" cy="12" r="4" fill="none" stroke="#94a3b8" strokeWidth="1.2" />
-            </g>
-            <g transform="translate(394, 26)">
-              <rect x="0" y="0" width="24" height="24" rx="5" fill="#2b1418" stroke="#ef4444" strokeWidth="1.2" />
-              <line x1="7" y1="7" x2="17" y2="17" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-              <line x1="17" y1="7" x2="7" y2="17" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-            </g>
-
-            {/* TOP-CENTER RAISED GOLD PLAQUE WITH CROSSED REVOLVERS */}
-            <g transform="translate(130, 4)" filter="url(#goldDropShadow)">
-              {/* Crossed Revolvers Emblem */}
-              <g transform="translate(90, 2) scale(0.85)" fill="url(#goldTextGrad)" stroke="#5c2e0b" strokeWidth="0.8">
-                <g transform="rotate(-32)">
-                  <rect x="-16" y="-3" width="24" height="5" rx="1.5" />
-                  <rect x="-12" y="2" width="7" height="9" rx="1.5" />
-                </g>
-                <g transform="rotate(32)">
-                  <rect x="-8" y="-3" width="24" height="5" rx="1.5" />
-                  <rect x="-5" y="2" width="7" height="9" rx="1.5" />
-                </g>
-              </g>
-
-              {/* Stepped Brass Border */}
-              <path
-                d="M 12,12 L 168,12 L 176,20 L 176,54 L 168,62 L 12,62 L 4,54 L 4,20 Z"
-                fill="url(#goldFrameGrad)"
-                stroke="#fde047"
-                strokeWidth="1.2"
-              />
-              <path
-                d="M 15,15 L 165,15 L 171,21 L 171,51 L 165,57 L 15,57 L 9,51 L 9,21 Z"
-                fill="#141720"
-                stroke="#78350f"
-                strokeWidth="1.2"
-              />
-              {/* Screws */}
-              <circle cx="16" cy="22" r="2" fill="#fde047" stroke="#78350f" />
-              <circle cx="164" cy="22" r="2" fill="#fde047" stroke="#78350f" />
-              <circle cx="16" cy="50" r="2" fill="#fde047" stroke="#78350f" />
-              <circle cx="164" cy="50" r="2" fill="#fde047" stroke="#78350f" />
-
-              {/* Bold Serif "Pistol Duel" */}
-              <text
-                x="90"
-                y="43"
-                textAnchor="middle"
-                fontFamily="Georgia, 'Times New Roman', serif"
-                fontSize="18"
-                fontWeight="900"
-                letterSpacing="1"
-                fill="url(#goldTextGrad)"
-                stroke="#451a03"
-                strokeWidth="0.6"
-              >
-                Pistol Duel
-              </text>
-            </g>
-
-            {/* Neon Glow Light Bars (Cyan Left, Red Right) */}
-            <rect x="74" y="66" width="100" height="6" rx="3" fill="url(#cyanTube)" filter="url(#cyanGlow)" />
-            <rect x="266" y="66" width="100" height="6" rx="3" fill="url(#redTube)" filter="url(#redGlow)" />
-
-            {/* Inner CRT Screen Frame Bezel */}
-            <path
-              d="M 38,82 L 402,82 L 412,92 L 412,586 L 402,596 L 38,596 L 28,586 L 28,92 Z"
-              fill="url(#innerBezelGrad)"
-              stroke="#454f63"
-              strokeWidth="2.5"
-            />
-            <rect x="36" y="88" width="368" height="500" rx="5" fill="none" stroke="#07090e" strokeWidth="3" />
-
-            {/* Bottom Recessed Instruction Slot Frame */}
-            <rect x="50" y="608" width="340" height="24" rx="12" fill="#0c1017" stroke="#3a4254" strokeWidth="1.2" />
-
-            {/* Bottom Tactile Buttons Frame */}
-            <rect x="60" y="644" width="145" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="1.8" />
-            <path d="M 66,646 L 199,646" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <rect x="235" y="644" width="145" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="1.8" />
-            <path d="M 241,646 L 374,646" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-          </svg>
-        ) : (
-          /* ════════ WIDESCREEN LANDSCAPE SVG CHASSIS (viewBox 0 0 1000 540) ═ */
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-10"
-            viewBox="0 0 1000 540"
-            preserveAspectRatio="none"
-          >
-            {/* Outer Heavy Metal Chassis */}
-            <path
-              d="M 50,14 L 360,14 L 370,8 L 630,8 L 640,14 L 950,14 L 986,50 L 986,490 L 950,526 L 50,526 L 14,490 L 14,50 Z"
-              fill="url(#chassisGrad)"
-              stroke="#5c667a"
-              strokeWidth="2.5"
-            />
-            <path
-              d="M 54,18 L 946,18 L 982,54 L 982,486 L 946,522 L 54,522 L 18,486 L 18,54 Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.18)"
-              strokeWidth="1.5"
-            />
-
-            {/* Side Ambient Neon Rim Glow */}
-            <path d="M 14,50 L 14,490" stroke="#00f0ff" strokeWidth="4.5" filter="url(#cyanGlow)" opacity="0.8" />
-            <path d="M 986,50 L 986,490" stroke="#ff2244" strokeWidth="4.5" filter="url(#redGlow)" opacity="0.8" />
-
-            {/* Side Flank Milled Ventilation Louvers */}
-            <g fill="#0e1117" stroke="#3b4252" strokeWidth="1">
-              <path d="M 38,180 L 52,166 L 56,168 L 42,182 Z" />
-              <path d="M 38,250 L 52,236 L 56,238 L 42,252 Z" />
-              <path d="M 38,320 L 52,306 L 56,308 L 42,322 Z" />
-              <path d="M 64,130 L 64,390" stroke="#232733" strokeWidth="2" />
-            </g>
-            <g fill="#0e1117" stroke="#3b4252" strokeWidth="1">
-              <path d="M 962,180 L 948,166 L 944,168 L 958,182 Z" />
-              <path d="M 962,250 L 948,236 L 944,238 L 958,252 Z" />
-              <path d="M 962,320 L 948,306 L 944,308 L 958,322 Z" />
-              <path d="M 936,130 L 936,390" stroke="#232733" strokeWidth="2" />
-            </g>
-
-            {/* Top-Left Target Crosshair Dial */}
-            <g transform="translate(114, 48)">
-              <circle cx="0" cy="0" r="23" fill="#1e232d" stroke="#525d70" strokeWidth="2" />
-              <circle cx="0" cy="0" r="16" fill="#2a0d12" stroke="#ef4444" strokeWidth="1.8" />
-              <circle cx="0" cy="0" r="8" fill="none" stroke="#ef4444" strokeWidth="1.2" />
-              <line x1="-15" y1="0" x2="-8" y2="0" stroke="#ef4444" strokeWidth="1.8" />
-              <line x1="8" y1="0" x2="15" y2="0" stroke="#ef4444" strokeWidth="1.8" />
-              <line x1="0" y1="-15" x2="0" y2="-8" stroke="#ef4444" strokeWidth="1.8" />
-              <line x1="0" y1="8" x2="0" y2="15" stroke="#ef4444" strokeWidth="1.8" />
-              <circle cx="0" cy="0" r="2.5" fill="#ef4444" filter="url(#redGlow)" />
-            </g>
-
-            {/* Top-Right Tactical Scope & Exit Buttons */}
-            <g transform="translate(832, 33)">
-              <rect x="0" y="0" width="32" height="30" rx="6" fill="#222834" stroke="#4f596d" strokeWidth="1.5" />
-              <path d="M 8,11 L 8,8 L 11,8 M 21,8 L 24,8 L 24,11 M 8,19 L 8,22 L 11,22 M 21,22 L 24,22 L 24,19" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-              <circle cx="16" cy="15" r="2" fill="#94a3b8" />
-            </g>
-            <g transform="translate(872, 33)">
-              <rect x="0" y="0" width="32" height="30" rx="6" fill="#2b1418" stroke="#ef4444" strokeWidth="1.5" />
-              <line x1="9" y1="8" x2="23" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="23" y1="8" x2="9" y2="22" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
-            </g>
-
-            {/* Recessed Neon Glow Light Bars */}
-            <rect x="156" y="74" width="188" height="8" rx="4" fill="#081017" stroke="#16232e" strokeWidth="1" />
-            <rect x="159" y="76" width="182" height="4" rx="2" fill="url(#cyanTube)" filter="url(#cyanGlow)" />
-            <rect x="656" y="74" width="188" height="8" rx="4" fill="#17080a" stroke="#2e1619" strokeWidth="1" />
-            <rect x="659" y="76" width="182" height="4" rx="2" fill="url(#redTube)" filter="url(#redGlow)" />
-
-            {/* TOP-CENTER RAISED GOLD PLAQUE WITH CROSSED REVOLVERS */}
-            <g transform="translate(370, 6)" filter="url(#goldDropShadow)">
-              {/* Crossed Revolvers */}
-              <g transform="translate(130, 2) scale(0.95)" fill="url(#goldTextGrad)" stroke="#5c2e0b" strokeWidth="0.8">
-                <g transform="rotate(-32)">
-                  <rect x="-18" y="-4" width="28" height="6" rx="1.5" />
-                  <rect x="-14" y="2" width="8" height="11" rx="2" />
-                  <circle cx="-5" cy="-1" r="4.5" />
-                </g>
-                <g transform="rotate(32)">
-                  <rect x="-10" y="-4" width="28" height="6" rx="1.5" />
-                  <rect x="-6" y="2" width="8" height="11" rx="2" />
-                  <circle cx="3" cy="-1" r="4.5" />
-                </g>
-              </g>
-
-              {/* Plaque Brass Border */}
-              <path d="M 16,14 L 244,14 L 254,24 L 254,64 L 244,74 L 16,74 L 6,64 L 6,24 Z" fill="url(#goldFrameGrad)" stroke="#fde047" strokeWidth="1.5" />
-              <path d="M 20,18 L 240,18 L 248,26 L 248,60 L 240,68 L 20,68 L 12,60 L 12,26 Z" fill="#141720" stroke="#78350f" strokeWidth="1.5" />
-              <circle cx="20" cy="26" r="2.8" fill="#fde047" stroke="#78350f" />
-              <circle cx="240" cy="26" r="2.8" fill="#fde047" stroke="#78350f" />
-              <circle cx="20" cy="60" r="2.8" fill="#fde047" stroke="#78350f" />
-              <circle cx="240" cy="60" r="2.8" fill="#fde047" stroke="#78350f" />
-
-              <text x="130" y="50" textAnchor="middle" fontFamily="Georgia, 'Times New Roman', serif" fontSize="24" fontWeight="900" letterSpacing="1.2" fill="url(#goldTextGrad)" stroke="#451a03" strokeWidth="0.8">
-                Pistol Duel
-              </text>
-            </g>
-
-            {/* Inner Screen Bezel Frame */}
-            <path d="M 112,106 L 888,106 L 902,120 L 902,402 L 888,416 L 112,416 L 98,402 L 98,120 Z" fill="url(#innerBezelGrad)" stroke="#454f63" strokeWidth="3" />
-            <rect x="118" y="112" width="764" height="298" rx="6" fill="none" stroke="#07090e" strokeWidth="4" />
-
-            {/* Bottom Instruction Slot Frame */}
-            <rect x="245" y="420" width="510" height="26" rx="13" fill="#0c1017" stroke="#3a4254" strokeWidth="1.5" />
-
-            {/* Bottom Tactile Buttons Frame */}
-            <rect x="270" y="464" width="180" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="2" />
-            <path d="M 276,466 L 444,466" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
-            <rect x="550" y="464" width="180" height="42" rx="10" fill="url(#btnMetalGrad)" stroke="#4b5568" strokeWidth="2" />
-            <path d="M 556,466 L 724,466" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
-          </svg>
-        )}
-
-        {/* ── 2. DYNAMIC CRT MONITOR SCREEN (Adaptive to orientation) ───────── */}
+        {/* ── 2. ACTIVE CRT MONITOR SCREEN (Coordinates match cabinet screen window) ── */}
         <div
           ref={screenAreaRef}
           className="absolute overflow-hidden cursor-crosshair z-20"
           style={
             isPortrait
               ? {
-                  left: '8.4%',
-                  top: '12.4%',
-                  width: '83.2%',
-                  height: '69.2%',
-                  borderRadius: '5px',
+                  left: '26.56%',
+                  top: '26.74%',
+                  width: '46.88%',
+                  height: '42.59%',
+                  borderRadius: '12px',
                   boxShadow: 'inset 0 0 25px rgba(0,0,0,0.95)',
                 }
               : {
-                  left: '11.8%',
-                  top: '20.74%',
-                  width: '76.4%',
-                  height: '55.18%',
+                  left: '14.2%',
+                  top: '20.6%',
+                  width: '71.2%',
+                  height: '55.2%',
                   borderRadius: '6px',
                   boxShadow: 'inset 0 0 35px rgba(0,0,0,0.95)',
                 }
           }
           onClick={handleShoot}
         >
+          {/* Active 2D Physics Canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
 
           {/* In-Screen HUD Overlay */}
-          <div className="absolute top-0 left-0 right-0 px-2 sm:px-5 pt-1.5 sm:pt-2 pb-1 flex items-start justify-between pointer-events-none z-30">
+          <div className="absolute top-0 left-0 right-0 px-2 sm:px-4 pt-1 sm:pt-2 pb-1 flex items-start justify-between pointer-events-none z-30">
             {/* Upper-Left: P1 + 4 Hearts (3 cyan filled, 1 empty outline) */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               <span
-                className="font-mono font-black text-xs sm:text-sm tracking-widest text-[#00e5ff]"
+                className="font-mono font-black text-[11px] sm:text-xs tracking-widest text-[#00e5ff]"
                 style={{ textShadow: '0 0 8px rgba(0,229,255,0.8)' }}
               >
                 P1
               </span>
-              <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
+              <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
                 {[...Array(hud.playerMaxHp)].map((_, i) => (
                   <span
                     key={i}
                     className={
                       i < hud.playerHp
                         ? 'text-[#00e5ff] drop-shadow-[0_0_8px_#00e5ff]'
-                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 -mt-0.5'
+                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-2.5 h-2.5 -mt-0.5'
                     }
                   >
                     {i < hud.playerHp ? '♥' : ''}
@@ -1344,8 +1055,8 @@ export default function PistolDuel({
 
             {/* Upper-Right: CPU Hearts + Status Capsule */}
             <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
                   {[...Array(hud.cpuMaxHp)].map((_, i) => (
                     <span
                       key={i}
@@ -1360,7 +1071,7 @@ export default function PistolDuel({
                   ))}
                 </div>
                 <span
-                  className="font-mono font-black text-xs sm:text-sm tracking-widest text-[#ef4444]"
+                  className="font-mono font-black text-[11px] sm:text-xs tracking-widest text-[#ef4444]"
                   style={{ textShadow: '0 0 8px rgba(239,68,68,0.8)' }}
                 >
                   CPU
@@ -1368,7 +1079,7 @@ export default function PistolDuel({
               </div>
 
               {/* Status Capsule */}
-              <div className="bg-[#121620]/95 px-2 py-0.5 rounded-full border border-white/15 flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-mono shadow-inner pointer-events-auto">
+              <div className="bg-[#121620]/95 px-2 py-0.5 rounded-full border border-white/15 flex items-center gap-1.5 text-[8.5px] sm:text-[10px] font-mono shadow-inner pointer-events-auto">
                 <span className="font-extrabold text-slate-200 tracking-wider">
                   LEVEL {hud.level}
                 </span>
@@ -1387,19 +1098,19 @@ export default function PistolDuel({
                 >
                   <i className={`fa-solid ${soundOn ? 'fa-volume-high' : 'fa-volume-xmark text-red-400'}`} />
                 </button>
-                <span className="text-emerald-400 text-xs">🔋</span>
+                <span className="text-emerald-400 text-[10px]">🔋</span>
               </div>
             </div>
           </div>
 
           {/* Victory Modal Overlay */}
           {phase === 'victory' && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl sm:text-5xl animate-bounce mb-1">🏆</div>
-              <h3 className="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-widest font-serif">
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-3 text-center">
+              <div className="text-3xl sm:text-4xl animate-bounce mb-1">🏆</div>
+              <h3 className="text-base sm:text-xl font-black text-amber-400 uppercase tracking-widest font-serif">
                 VICTORY!
               </h3>
-              <p className="text-slate-300 text-[11px] sm:text-xs mb-3">
+              <p className="text-slate-300 text-[10px] sm:text-xs mb-3">
                 LEVEL {hud.level} CLEARED · REWARD +50 COINS
               </p>
               <div className="flex gap-2">
@@ -1409,7 +1120,7 @@ export default function PistolDuel({
                     playSound('click', soundRef.current);
                     startLevel(levelIdx + 1);
                   }}
-                  className="bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black px-4 sm:px-5 py-2 rounded-xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/30 cursor-pointer"
+                  className="bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/30 cursor-pointer"
                 >
                   NEXT LEVEL →
                 </button>
@@ -1419,7 +1130,7 @@ export default function PistolDuel({
                     playSound('click', soundRef.current);
                     startLevel(levelIdx);
                   }}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 sm:px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
                 >
                   REPLAY
                 </button>
@@ -1429,12 +1140,12 @@ export default function PistolDuel({
 
           {/* Failed Modal Overlay */}
           {phase === 'failed' && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl sm:text-5xl mb-1">💀</div>
-              <h3 className="text-lg sm:text-2xl font-black text-red-500 uppercase tracking-widest font-serif">
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-3 text-center">
+              <div className="text-3xl sm:text-4xl mb-1">💀</div>
+              <h3 className="text-base sm:text-xl font-black text-red-500 uppercase tracking-widest font-serif">
                 FAILED!
               </h3>
-              <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-4">
+              <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-3">
                 CPU GOT YOU!
               </p>
               <button
@@ -1443,7 +1154,7 @@ export default function PistolDuel({
                   playSound('click', soundRef.current);
                   startLevel(levelIdx);
                 }}
-                className="bg-gradient-to-r from-red-500 to-rose-600 text-white font-black px-5 sm:px-6 py-2 rounded-xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition shadow-lg shadow-red-500/30 cursor-pointer"
+                className="bg-gradient-to-r from-red-500 to-rose-600 text-white font-black px-5 py-2 rounded-xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition shadow-lg shadow-red-500/30 cursor-pointer"
               >
                 RETRY LEVEL {hud.level}
               </button>
@@ -1451,40 +1162,7 @@ export default function PistolDuel({
           )}
         </div>
 
-        {/* ── 3. BOTTOM RECESSED INSTRUCTION TEXT ─────────────────────────── */}
-        <div
-          className="absolute z-20 text-center pointer-events-none"
-          style={
-            isPortrait
-              ? {
-                  left: '12%',
-                  top: '84.4%',
-                  width: '76%',
-                  height: '3.4%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }
-              : {
-                  left: '24.5%',
-                  top: '77.77%',
-                  width: '51%',
-                  height: '4.81%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }
-          }
-        >
-          <span
-            className="text-[8px] sm:text-[11px] md:text-[12px] font-black tracking-widest text-slate-300 uppercase font-mono animate-pulse"
-            style={{ textShadow: '0 0 8px rgba(56,189,248,0.5)' }}
-          >
-            TAP TO SHOOT — MASTER THE RECOIL FOR THE NEXT LEVEL!
-          </span>
-        </div>
-
-        {/* ── 4. INTERACTIVE BUTTON OVERLAYS ──────────────────────────────── */}
+        {/* ── 3. INTERACTIVE BUTTON TOUCH OVERLAYS ───────────────────────── */}
         {/* Fullscreen Scope Button */}
         {onToggleFullscreen && (
           <button
@@ -1495,8 +1173,8 @@ export default function PistolDuel({
             className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-white/10 transition"
             style={
               isPortrait
-                ? { left: '82.7%', top: '3.6%', width: '5.5%', height: '3.4%' }
-                : { left: '83.2%', top: '6.1%', width: '3.2%', height: '5.55%' }
+                ? { left: '74%', top: '7.8%', width: '15%', height: '4.8%' }
+                : { left: '81%', top: '4.2%', width: '5.2%', height: '9.7%' }
             }
             title="Fullscreen"
           />
@@ -1512,48 +1190,51 @@ export default function PistolDuel({
             className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-red-500/20 transition"
             style={
               isPortrait
-                ? { left: '89.5%', top: '3.6%', width: '5.5%', height: '3.4%' }
-                : { left: '87.2%', top: '6.1%', width: '3.2%', height: '5.55%' }
+                ? { left: '74%', top: '13.8%', width: '15%', height: '4.8%' }
+                : { left: '86.5%', top: '4.2%', width: '5.2%', height: '9.7%' }
             }
             title="Exit Game"
           />
         )}
 
-        {/* Like (99%) Button */}
+        {/* Like (99%) Button Overlay */}
         <button
           onClick={() => {
             playSound('click', soundRef.current);
             toggleLike();
           }}
-          className={`absolute z-30 flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-black transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 ${
-            isLiked ? 'text-emerald-300' : 'text-slate-300'
-          }`}
+          className="absolute z-30 cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 transition"
           style={
             isPortrait
-              ? { left: '13.6%', top: '89.4%', width: '33%', height: '5.8%' }
-              : { left: '27%', top: '85.92%', width: '18%', height: '7.77%' }
+              ? { left: '26%', top: '84.8%', width: '22%', height: '5.2%' }
+              : { left: '27%', top: '86.3%', width: '15.7%', height: '10.3%' }
           }
+          title="Like Game"
         >
-          <i className={`fa-solid fa-thumbs-up text-xs sm:text-sm ${isLiked ? 'text-emerald-400' : 'text-slate-400'}`} />
-          <span>Like (99%)</span>
-          {isLiked && <span className="absolute inset-0 border-2 border-emerald-400/80 rounded-xl pointer-events-none shadow-[0_0_10px_rgba(16,185,129,0.5)]" />}
+          {isLiked && (
+            <span className="absolute inset-0 border-2 border-emerald-400/80 rounded-xl pointer-events-none shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+          )}
         </button>
 
-        {/* Report Game Button */}
+        {/* Report Game Button Overlay */}
         <button
           onClick={() => {
             playSound('click', soundRef.current);
             triggerReport();
           }}
-          className="absolute z-30 flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-black text-slate-300 hover:text-white transition cursor-pointer active:scale-95 rounded-xl hover:bg-white/10"
+          className="absolute z-30 cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 transition"
           style={
             isPortrait
-              ? { left: '53.4%', top: '89.4%', width: '33%', height: '5.8%' }
-              : { left: '55%', top: '85.92%', width: '18%', height: '7.77%' }
+              ? { left: '52%', top: '84.8%', width: '22%', height: '5.2%' }
+              : { left: '57%', top: '86.3%', width: '15.7%', height: '10.3%' }
           }
+          title="Report Game"
         >
-          <i className="fa-solid fa-flag text-xs sm:text-sm text-slate-400" />
-          <span>{reportedMsg ? 'Reported!' : 'Report game'}</span>
+          {reportedMsg && (
+            <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded shadow whitespace-nowrap">
+              Reported!
+            </span>
+          )}
         </button>
       </div>
     </div>
