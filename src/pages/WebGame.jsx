@@ -426,13 +426,13 @@ function DuelPreviewCanvas() {
         ctx.arc(GW * 0.92, 0, 3, 0, Math.PI * 2);
         ctx.fill();
         // Grip
-        ctx.fillStyle = col === '#38bdf8' ? '#1e40af' : '#7f1d1d';
+        ctx.fillStyle = col === '#22c55e' ? '#14532d' : '#7f1d1d';
         ctx.shadowBlur = 0;
         ctx.fillRect(-GW * 0.3, 1.5, GW * 0.22, GH - 1.5);
         ctx.restore();
       };
 
-      drawActualGun(state.p.x, state.p.y, state.p.a, '#38bdf8');
+      drawActualGun(state.p.x, state.p.y, state.p.a, '#22c55e');
       drawActualGun(state.e.x, state.e.y, state.e.a, '#ef4444');
 
       rafRef.current = requestAnimationFrame(draw);

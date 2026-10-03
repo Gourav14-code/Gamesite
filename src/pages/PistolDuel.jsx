@@ -1,160 +1,305 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-/* ═══════════════════════════════════════════════════════════════════════
-   PISTOL DUEL — Player vs CPU Duel Arena (5 Levels)
-   - Fully responsive: native portrait (mobile) & landscape (desktop)
-   - Zero blank screen: arena & guns render immediately on mount
-   - Touch & Click aiming with recoil physics and bullet ricochet
-   - Safe WebAudio & canvas rendering on all devices
-   ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PISTOL DUEL — Hyper-Casual Portrait Mobile Physics Duel
+   Inspired by recoil-based timing mechanics & premium dark mobile aesthetics:
+   - Green Player Gun vs Red CPU Gun inside closed portrait phone arena
+   - Guns rotate continuously through physics; tap anywhere fires in muzzle direction
+   - Strong recoil force + rotational torque on every shot
+   - Small gun footprint (~14% frame width) with rigid-body boundaries & obstacles
+   - 10 Levels with moving obstacles, ricocheting bullets, coins, and sound FX
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-const LEVELS = [
-  { level: 1, cpuHp: 2, cpuMs: 2000, scatter: 80, label: 'Rookie',       badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' },
-  { level: 2, cpuHp: 3, cpuMs: 1600, scatter: 55, label: 'Gunner',       badge: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' },
-  { level: 3, cpuHp: 3, cpuMs: 1250, scatter: 35, label: 'Sharpshooter', badge: 'bg-blue-500/20 text-blue-400 border-blue-500/40' },
-  { level: 4, cpuHp: 4, cpuMs: 950,  scatter: 18, label: 'Marksman',     badge: 'bg-purple-500/20 text-purple-400 border-purple-500/40' },
-  { level: 5, cpuHp: 5, cpuMs: 700,  scatter: 6,  label: 'Legendary',    badge: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
+// ── Level Configurations (10 Levels) ──────────────────────────────────────────
+const LEVELS_CONFIG = [
+  { level: 1,  name: 'Recoil 101',      cpuHp: 2, cpuDelay: 2200, cpuTol: 0.55, obstacles: [] },
+  { level: 2,  name: 'Gunner Duel',     cpuHp: 2, cpuDelay: 1900, cpuTol: 0.48, obstacles: [] },
+  { level: 3,  name: 'Center Pillar',   cpuHp: 3, cpuDelay: 1700, cpuTol: 0.42, obstacles: [{ x: 0.5, y: 0.5, w: 0.22, h: 0.04, type: 'rect' }] },
+  { level: 4,  name: 'Quickdraw',       cpuHp: 3, cpuDelay: 1500, cpuTol: 0.38, obstacles: [] },
+  { level: 5,  name: 'Ledge Divide',    cpuHp: 3, cpuDelay: 1400, cpuTol: 0.34, obstacles: [{ x: 0.65, y: 0.48, w: 0.38, h: 0.035, type: 'rect' }] },
+  { level: 6,  name: 'Ricochet Zone',   cpuHp: 3, cpuDelay: 1300, cpuTol: 0.30, obstacles: [{ x: 0.5, y: 0.38, w: 0.18, h: 0.04, type: 'rect' }, { x: 0.5, y: 0.62, w: 0.18, h: 0.04, type: 'rect' }] },
+  { level: 7,  name: 'Twin Ledges',     cpuHp: 4, cpuDelay: 1200, cpuTol: 0.26, obstacles: [{ x: 0.3, y: 0.42, w: 0.32, h: 0.035, type: 'rect' }, { x: 0.7, y: 0.58, w: 0.32, h: 0.035, type: 'rect' }] },
+  { level: 8,  name: 'Sharpshooter',    cpuHp: 4, cpuDelay: 1100, cpuTol: 0.22, obstacles: [{ x: 0.5, y: 0.5, w: 0.24, h: 0.24, type: 'diamond' }] },
+  { level: 9,  name: 'Sliding Hazard',  cpuHp: 4, cpuDelay: 1000, cpuTol: 0.20, obstacles: [{ x: 0.5, y: 0.5, w: 0.30, h: 0.04, type: 'moving_x', speed: 1.2 }] },
+  { level: 10, name: 'Cyber Legend',    cpuHp: 5, cpuDelay: 850,  cpuTol: 0.16, obstacles: [{ x: 0.5, y: 0.5, w: 0.32, h: 0.04, type: 'moving_x', speed: 1.6 }, { x: 0.5, y: 0.32, w: 0.20, h: 0.03, type: 'rect' }, { x: 0.5, y: 0.68, w: 0.20, h: 0.03, type: 'rect' }] },
 ];
 
-let duelAudioCtx = null;
-function getDuelAudio() {
+// ── Synthesized Web Audio System ──────────────────────────────────────────────
+let globalAudioCtx = null;
+function getAudioCtx() {
   try {
-    if (!duelAudioCtx) {
-      const A = window.AudioContext || window.webkitAudioContext;
-      if (A) duelAudioCtx = new A();
+    if (!globalAudioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) globalAudioCtx = new AudioContextClass();
     }
-    if (duelAudioCtx && duelAudioCtx.state === 'suspended') {
-      duelAudioCtx.resume().catch(() => {});
+    if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+      globalAudioCtx.resume().catch(() => {});
     }
   } catch {}
-  return duelAudioCtx;
+  return globalAudioCtx;
 }
 
-function playTone(f1, f2, dur, soundEnabled = true, type = 'sawtooth') {
-  if (!soundEnabled) return;
+function playSound(type, soundOn = true) {
+  if (!soundOn) return;
   try {
-    const ctx = getDuelAudio();
+    const ctx = getAudioCtx();
     if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(f1, ctx.currentTime);
-    if (f2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f2), ctx.currentTime + dur);
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + dur);
+    const now = ctx.currentTime;
+
+    if (type === 'shoot_player') {
+      // Punchy metallic gunshot with quick frequency drop
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(540, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.14);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    } else if (type === 'shoot_cpu') {
+      // Deeper CPU firing tone
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.16);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } else if (type === 'ricochet') {
+      // High metallic ping
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1400, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.06);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else if (type === 'hit') {
+      // Impact explosion / crunch
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.22);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } else if (type === 'win') {
+      // Ascending victory chord
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.35);
+      });
+    } else if (type === 'gameover') {
+      // Descending defeat note
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.5);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'coin') {
+      // Sparkly coin pickup
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(987.77, now);
+      osc.frequency.setValueAtTime(1318.51, now + 0.08);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
   } catch {}
 }
 
-function initState(li, width = 600, height = 400) {
-  const lv = LEVELS[Math.min(li, LEVELS.length - 1)];
-  const isPortrait = height > width;
-
-  // Initial gun positions depending on orientation
-  const px = isPortrait ? width * 0.5 : width * 0.22;
-  const py = isPortrait ? height * 0.78 : height * 0.5;
-  const pAngle = isPortrait ? -Math.PI / 2 : 0;
-
-  const cx = isPortrait ? width * 0.5 : width * 0.78;
-  const cy = isPortrait ? height * 0.22 : height * 0.5;
-  const cAngle = isPortrait ? Math.PI / 2 : Math.PI;
-
-  return {
-    lv,
-    isPortrait,
-    px, py, pvx: 0, pvy: 0, pAngle, pSpin: 0, pFlash: 0,
-    cx, cy, cvx: 0, cvy: 0, cAngle, cSpin: 0, cFlash: 0,
-    pHp: 3, pMaxHp: 3,
-    cHp: lv.cpuHp, cMaxHp: lv.cpuHp,
-    pBullets: [], cBullets: [],
-    particles: [],
-    floatingTexts: [],
-    cTimer: lv.cpuMs,
-    score: 0,
-    initialized: true,
-  };
+// ── Helper Math Functions ─────────────────────────────────────────────────────
+function normAngle(a) {
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
 }
 
-// Draw a stylized cyber pistol
-function drawGun(ctx, x, y, angle, col, flash, isPlayer = true) {
-  const GW = 52, GH = 20;
-  const blink = flash > 0 && Math.floor(flash / 4) % 2 === 0;
+// ── Draw Realistic 2D Gun (Small footprint ~14% frame width) ─────────────────
+function renderGunModel(ctx, gun, isPlayer) {
+  const GL = gun.length;
+  const GH = gun.height;
+  const col = isPlayer ? '#22c55e' : '#ef4444'; // Green Player, Red CPU
+  const accent = isPlayer ? '#15803d' : '#991b1b';
+  const highlight = isPlayer ? '#86efac' : '#fca5a5';
 
   ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.globalAlpha = blink ? 0.3 : 1;
+  ctx.translate(gun.x, gun.y);
+  ctx.rotate(gun.angle);
 
-  // Glow halo
-  ctx.shadowColor = col;
-  ctx.shadowBlur = flash > 0 ? 25 : 14;
+  // Hit flash blinking
+  if (gun.flash > 0 && Math.floor(gun.flash / 3) % 2 === 0) {
+    ctx.globalAlpha = 0.35;
+  }
 
-  // Main gun slide/body
-  ctx.fillStyle = col;
-  ctx.fillRect(-GW * 0.32, -GH / 2, GW * 0.65, GH);
+  // Gun Drop Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.65)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 4;
 
-  // Extended barrel
-  ctx.fillStyle = isPlayer ? '#38bdf8' : '#f87171';
-  ctx.fillRect(GW * 0.33, -5, GW * 0.58, 10);
-
-  // Muzzle ring
-  ctx.fillStyle = '#ffffff';
+  // 1. Grip / Handle (Dark textured metal)
+  ctx.fillStyle = '#1c1917';
   ctx.beginPath();
-  ctx.arc(GW * 0.91, 0, 4.5, 0, Math.PI * 2);
+  ctx.roundRect(-GL * 0.32, GH * 0.1, GL * 0.28, GH * 0.85, [2, 2, 5, 5]);
   ctx.fill();
 
-  // Dark ergonomic grip
-  ctx.fillStyle = isPlayer ? '#0f172a' : '#450a0a';
+  // Grip checkering lines
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-GL * 0.3, GH * 0.35);
+  ctx.lineTo(-GL * 0.08, GH * 0.35);
+  ctx.moveTo(-GL * 0.3, GH * 0.6);
+  ctx.lineTo(-GL * 0.08, GH * 0.6);
+  ctx.stroke();
+
+  // 2. Trigger Guard & Trigger
+  ctx.strokeStyle = '#78716c';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(-GL * 0.02, GH * 0.28, GH * 0.28, 0, Math.PI);
+  ctx.stroke();
+
+  // Trigger
+  ctx.strokeStyle = '#e7e5e4';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-GL * 0.04, GH * 0.12);
+  ctx.lineTo(-GL * 0.01, GH * 0.32);
+  ctx.stroke();
+
+  // 3. Lower Receiver (Colored metallic finish)
+  ctx.fillStyle = accent;
+  ctx.fillRect(-GL * 0.35, -GH * 0.1, GL * 0.65, GH * 0.45);
+
+  // 4. Slide / Upper Barrel (Glossy Colored Metal)
   ctx.shadowBlur = 0;
-  ctx.fillRect(-GW * 0.32, 2, GW * 0.24, GH - 1);
-
-  // Trigger guard
-  ctx.strokeStyle = col;
-  ctx.lineWidth = 2;
+  const slideGrad = ctx.createLinearGradient(0, -GH * 0.55, 0, GH * 0.15);
+  slideGrad.addColorStop(0, highlight);
+  slideGrad.addColorStop(0.35, col);
+  slideGrad.addColorStop(1, accent);
+  ctx.fillStyle = slideGrad;
   ctx.beginPath();
-  ctx.arc(-GW * 0.05, 5, 5, 0, Math.PI);
-  ctx.stroke();
+  ctx.roundRect(-GL * 0.36, -GH * 0.55, GL * 0.86, GH * 0.55, [3, 2, 2, 3]);
+  ctx.fill();
 
-  // Metallic top highlight
-  ctx.globalAlpha = blink ? 0 : 0.45;
+  // Slide serrations (rear grooves)
+  ctx.fillStyle = '#0f172a';
+  for (let s = -GL * 0.32; s < -GL * 0.16; s += 3.5) {
+    ctx.fillRect(s, -GH * 0.5, 1.8, GH * 0.4);
+  }
+
+  // 5. Extended Steel Barrel Tip
+  ctx.fillStyle = '#262626';
+  ctx.fillRect(GL * 0.5, -GH * 0.35, GL * 0.12, GH * 0.3);
+
+  // Muzzle Crown Ring
+  ctx.fillStyle = '#e5e5e5';
+  ctx.beginPath();
+  ctx.arc(GL * 0.62, -GH * 0.2, GH * 0.14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Front Sight & Rear Sight
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-GW * 0.28, -GH / 2 + 2, GW * 0.55, 3);
+  ctx.fillRect(GL * 0.46, -GH * 0.66, 2.5, 3.5); // Front sight
+  ctx.fillRect(-GL * 0.34, -GH * 0.66, 2.5, 3.5); // Rear sight
 
-  // Laser sight dot guide
-  ctx.globalAlpha = 0.6;
+  // Ejection Port
+  ctx.fillStyle = '#171717';
+  ctx.fillRect(-GL * 0.05, -GH * 0.52, GL * 0.22, GH * 0.22);
+
+  // 6. Laser Guide Line (subtle faint laser for aiming read)
+  ctx.save();
+  ctx.globalAlpha = 0.35;
   ctx.strokeStyle = col;
-  ctx.setLineDash([3, 6]);
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]);
   ctx.beginPath();
-  ctx.moveTo(GW * 0.95, 0);
-  ctx.lineTo(GW * 0.95 + 70, 0);
+  ctx.moveTo(GL * 0.62, -GH * 0.2);
+  ctx.lineTo(GL * 0.62 + 90, -GH * 0.2);
   ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.restore();
 
   ctx.restore();
 }
 
+// ── Draw Motion Ghost / Trail (Matches Reference Image) ───────────────────────
+function renderGhostTrails(ctx, ghosts, isPlayer) {
+  const col = isPlayer ? 'rgba(34, 197, 94, ' : 'rgba(239, 68, 68, ';
+  ghosts.forEach((g) => {
+    ctx.save();
+    ctx.translate(g.x, g.y);
+    ctx.rotate(g.angle);
+    ctx.globalAlpha = g.alpha * 0.35;
+    ctx.fillStyle = col + g.alpha * 0.6 + ')';
+    ctx.strokeStyle = col + g.alpha * 0.8 + ')';
+    ctx.lineWidth = 1;
+
+    // Simplified wireframe/ghost shape
+    const GL = g.length;
+    const GH = g.height;
+    ctx.strokeRect(-GL * 0.36, -GH * 0.55, GL * 0.86, GH * 0.55);
+    ctx.fillRect(-GL * 0.36, -GH * 0.55, GL * 0.86, GH * 0.55);
+    ctx.fillRect(-GL * 0.32, GH * 0.1, GL * 0.26, GH * 0.8);
+    ctx.restore();
+  });
+}
+
 export default function PistolDuel({ onClose }) {
-  const canvasRef  = useRef(null);
-  const wrapRef    = useRef(null);
-  const rafRef     = useRef(null);
-  const loopRef    = useRef(null);
-  const stateRef   = useRef(null);
-  const phaseRef   = useRef('menu'); // 'menu' | 'countdown' | 'playing' | 'overlay'
-  const lvlRef     = useRef(0);
-  const sizeRef    = useRef({ W: 600, H: 400 });
-  const soundRef   = useRef(true);
+  // References
+  const containerRef = useRef(null);
+  const canvasRef    = useRef(null);
+  const animFrameRef = useRef(null);
+  const stateRef     = useRef(null);
+  const phaseRef     = useRef('start'); // 'start' | 'playing' | 'win' | 'gameover'
+  const soundRef     = useRef(true);
 
-  const [phase, setPhase]         = useState('menu');
-  const [countdown, setCountdown] = useState(3);
-  const [lvlIdx, setLvlIdx]       = useState(0);
-  const [soundOn, setSoundOn]     = useState(true);
-  const [overlay, setOverlay]     = useState(null); // 'levelclear' | 'win' | 'gameover'
-  const [hud, setHud]             = useState({ pHp: 3, cHp: 2, cMax: 2, lvl: 1, label: 'Rookie', score: 0 });
+  // Component State for UI Overlays
+  const [phase, setPhase]     = useState('start');
+  const [levelIdx, setLevelIdx] = useState(0);
+  const [soundOn, setSoundOn] = useState(true);
+  const [coins, setCoins]     = useState(() => {
+    return parseInt(localStorage.getItem('duel_coins') || '150', 10);
+  });
+  const [hud, setHud]         = useState({ playerHp: 3, cpuHp: 2, level: 1, name: 'Recoil 101' });
 
-  const syncPhase = (p) => {
+  // Update phase helper
+  const setGamePhase = (p) => {
     phaseRef.current = p;
     setPhase(p);
   };
@@ -164,696 +309,837 @@ export default function PistolDuel({ onClose }) {
     setSoundOn(soundRef.current);
   };
 
-  // ── Resize handler with layout preservation ──────────────────────────────
-  const resize = useCallback(() => {
-    const c = canvasRef.current;
-    const w = wrapRef.current;
-    if (!c || !w) return;
+  // ── Spawn Gun Initial State ───────────────────────────────────────────────
+  const initLevelState = useCallback((lIdx, W, H) => {
+    const cfg = LEVELS_CONFIG[Math.min(lIdx, LEVELS_CONFIG.length - 1)];
 
-    const rect = w.getBoundingClientRect();
-    const width = Math.max(280, Math.floor(rect.width || w.clientWidth || 600));
-    const height = Math.max(240, Math.floor(rect.height || w.clientHeight || 400));
+    // Target gun size: approximately 14-16% of gameplay frame width
+    const gunWidth = Math.max(38, Math.min(56, W * 0.15));
+    const gunHeight = gunWidth * 0.44;
+    const collisionRadius = gunWidth * 0.48;
 
-    c.width = width;
-    c.height = height;
+    // Player Gun (Green) - Spawns in bottom half, pointing slightly right/up
+    const player = {
+      x: W * 0.32,
+      y: H * 0.72,
+      vx: 0,
+      vy: 0,
+      angle: -0.2,               // Facing right-up
+      spin: 1.8,                 // Natural continuous rotation
+      length: gunWidth,
+      height: gunHeight,
+      radius: collisionRadius,
+      hp: 3,
+      maxHp: 3,
+      flash: 0,
+      ghosts: [],
+      lastGhostTs: 0,
+    };
 
-    const oldW = sizeRef.current.W;
-    const oldH = sizeRef.current.H;
-    sizeRef.current = { W: width, H: height };
+    // CPU Gun (Red) - Spawns in top half, pointing left/down
+    const cpu = {
+      x: W * 0.68,
+      y: H * 0.28,
+      vx: 0,
+      vy: 0,
+      angle: Math.PI - 0.2,
+      spin: -1.7,                // Natural continuous rotation in opposite direction
+      length: gunWidth,
+      height: gunHeight,
+      radius: collisionRadius,
+      hp: cfg.cpuHp,
+      maxHp: cfg.cpuHp,
+      flash: 0,
+      ghosts: [],
+      lastGhostTs: 0,
+      timer: cfg.cpuDelay,
+    };
 
-    const s = stateRef.current;
-    if (s) {
-      s.isPortrait = height > width;
-      // Reposition proportionally if screen resized
-      if (oldW > 0 && oldH > 0) {
-        s.px = (s.px / oldW) * width;
-        s.py = (s.py / oldH) * height;
-        s.cx = (s.cx / oldW) * width;
-        s.cy = (s.cy / oldH) * height;
-      }
-    }
+    // Convert obstacle definitions to current screen dimensions
+    const obstacles = cfg.obstacles.map((obs) => ({
+      ...obs,
+      pixelX: obs.x * W,
+      pixelY: obs.y * H,
+      pixelW: obs.w * W,
+      pixelH: obs.h * H,
+      currX: obs.x * W,
+      time: 0,
+    }));
+
+    return {
+      cfg,
+      W,
+      H,
+      player,
+      cpu,
+      bullets: [],
+      particles: [],
+      ejectedShells: [],
+      obstacles,
+      screenShake: 0,
+    };
   }, []);
 
-  // ── Shoot helper ─────────────────────────────────────────────────────────
-  const shoot = (s, isPlayer, tx, ty) => {
-    const ox = isPlayer ? s.px : s.cx;
-    const oy = isPlayer ? s.py : s.cy;
-    const dx = tx - ox;
-    const dy = ty - oy;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = dx / len;
-    const ny = dy / len;
+  // ── Fire Gun Physics Action ───────────────────────────────────────────────
+  const fireGun = (s, isPlayer) => {
+    const gun = isPlayer ? s.player : s.cpu;
 
-    // Bullet speed
-    const spd = 12;
-    const bArr = isPlayer ? s.pBullets : s.cBullets;
-    bArr.push({ x: ox + nx * 30, y: oy + ny * 30, vx: nx * spd, vy: ny * spd, bounces: 0 });
+    // 1. Muzzle position calculation
+    const muzzleDist = gun.length * 0.62;
+    const muzzleX = gun.x + Math.cos(gun.angle) * muzzleDist;
+    const muzzleY = gun.y + Math.sin(gun.angle) * muzzleDist;
 
-    // Recoil kickback + spin
-    const targetAngle = Math.atan2(ny, nx);
-    const spin = (Math.sin(targetAngle) >= 0 ? -1 : 1) * (1.2 + Math.random() * 0.4);
+    // 2. Spawn bullet traveling in CURRENT muzzle direction
+    const bulletSpeed = 16.5;
+    const bVx = Math.cos(gun.angle) * bulletSpeed;
+    const bVy = Math.sin(gun.angle) * bulletSpeed;
 
-    if (isPlayer) {
-      s.pvx -= nx * 8;
-      s.pvy -= ny * 8;
-      s.pSpin = spin;
-      s.pAngle = targetAngle;
-      playTone(480, 80, 0.16, soundRef.current, 'sawtooth');
-    } else {
-      s.cvx -= nx * 8;
-      s.cvy -= ny * 8;
-      s.cSpin = -spin;
-      s.cAngle = targetAngle;
-      playTone(340, 60, 0.16, soundRef.current, 'triangle');
-    }
-
-    // Muzzle sparks
-    for (let i = 0; i < 7; i++) {
-      const a = targetAngle + (Math.random() - 0.5) * 0.8;
-      const sp = Math.random() * 5 + 2;
-      s.particles.push({
-        x: ox + nx * 30,
-        y: oy + ny * 30,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: 1,
-        col: isPlayer ? '#38bdf8' : '#fb923c',
-      });
-    }
-  };
-
-  // ── Burst particles ───────────────────────────────────────────────────────
-  const burst = (s, x, y, col, n = 20) => {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = Math.random() * 6 + 1.5;
-      s.particles.push({
-        x,
-        y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: 1,
-        col,
-      });
-    }
-  };
-
-  // ── Start / Restart Level ────────────────────────────────────────────────
-  const startLevel = (li) => {
-    const { W, H } = sizeRef.current;
-    const s = initState(li, W, H);
-    stateRef.current = s;
-    lvlRef.current = li;
-    setLvlIdx(li);
-    setHud({
-      pHp: s.pHp,
-      cHp: s.cHp,
-      cMax: s.cMaxHp,
-      lvl: s.lv.level,
-      label: s.lv.label,
-      score: s.score,
+    s.bullets.push({
+      x: muzzleX,
+      y: muzzleY,
+      vx: bVx,
+      vy: bVy,
+      isPlayer,
+      bounces: 0,
+      maxBounces: 3,
+      trail: [],
     });
-    setOverlay(null);
 
-    // Short exciting 3..2..1 countdown
-    syncPhase('countdown');
-    setCountdown(3);
-    playTone(520, null, 0.08, soundRef.current, 'sine');
+    // 3. Muzzle Flash & Sparks
+    for (let i = 0; i < 9; i++) {
+      const spread = gun.angle + (Math.random() - 0.5) * 0.7;
+      const sp = Math.random() * 7 + 3;
+      s.particles.push({
+        x: muzzleX,
+        y: muzzleY,
+        vx: Math.cos(spread) * sp,
+        vy: Math.sin(spread) * sp,
+        life: 1.0,
+        decay: 0.08,
+        col: Math.random() > 0.4 ? '#f59e0b' : '#fef08a',
+        size: Math.random() * 3.5 + 1.5,
+      });
+    }
 
-    let count = 3;
-    const timer = setInterval(() => {
-      count -= 1;
-      if (count > 0) {
-        setCountdown(count);
-        playTone(520, null, 0.08, soundRef.current, 'sine');
-      } else if (count === 0) {
-        setCountdown('DRAW!');
-        playTone(880, 1100, 0.25, soundRef.current, 'sine');
-      } else {
-        clearInterval(timer);
-        syncPhase('playing');
-      }
-    }, 450);
+    // 4. Barrel Smoke Puff
+    for (let i = 0; i < 4; i++) {
+      const sp = Math.random() * 2 + 0.5;
+      s.particles.push({
+        x: muzzleX,
+        y: muzzleY,
+        vx: Math.cos(gun.angle) * sp + (Math.random() - 0.5),
+        vy: Math.sin(gun.angle) * sp + (Math.random() - 0.5),
+        life: 1.0,
+        decay: 0.035,
+        col: 'rgba(214, 211, 209, 0.45)',
+        size: Math.random() * 5 + 3,
+      });
+    }
+
+    // 5. Eject Brass Shell Casing
+    const ejectAngle = gun.angle - Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+    s.ejectedShells.push({
+      x: gun.x,
+      y: gun.y,
+      vx: Math.cos(ejectAngle) * (Math.random() * 3 + 2),
+      vy: Math.sin(ejectAngle) * (Math.random() * 3 + 2),
+      rot: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 12,
+      life: 1.0,
+    });
+
+    // 6. Strong Recoil Force opposite to bullet direction
+    const recoilImpulse = 9.8;
+    gun.vx -= Math.cos(gun.angle) * recoilImpulse;
+    gun.vy -= Math.sin(gun.angle) * recoilImpulse;
+
+    // 7. Rotational Torque kick (gun spins dynamically with recoil)
+    const spinDir = Math.random() > 0.5 ? 1 : -1;
+    const recoilTorque = (2.8 + Math.random() * 1.4) * spinDir;
+    gun.spin += recoilTorque;
+
+    // Audio trigger
+    playSound(isPlayer ? 'shoot_player' : 'shoot_cpu', soundRef.current);
   };
 
-  // ── Input coordinates with high-DPI scaling ──────────────────────────────
-  const getCanvasXY = (clientX, clientY) => {
-    const c = canvasRef.current;
-    if (!c) return [0, 0];
-    const r = c.getBoundingClientRect();
-    if (!r.width || !r.height) return [0, 0];
-    const scaleX = c.width / r.width;
-    const scaleY = c.height / r.height;
-    return [(clientX - r.left) * scaleX, (clientY - r.top) * scaleY];
-  };
+  // ── Start / Retry Level ───────────────────────────────────────────────────
+  const startLevel = useCallback((lIdx) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const W = canvas.width;
+    const H = canvas.height;
 
-  const handleClick = (e) => {
+    const s = initLevelState(lIdx, W, H);
+    stateRef.current = s;
+    setLevelIdx(lIdx);
+    setHud({
+      playerHp: s.player.hp,
+      cpuHp: s.cpu.hp,
+      level: s.cfg.level,
+      name: s.cfg.name,
+    });
+    setGamePhase('playing');
+  }, [initLevelState]);
+
+  // ── Handle Tap / Click to Shoot ───────────────────────────────────────────
+  const handlePlayerShoot = () => {
     if (phaseRef.current !== 'playing') return;
     const s = stateRef.current;
     if (!s) return;
-    const [mx, my] = getCanvasXY(e.clientX, e.clientY);
-    shoot(s, true, mx, my);
+    fireGun(s, true);
   };
 
-  const handleTouch = (e) => {
-    if (phaseRef.current !== 'playing') return;
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    if (!t) return;
-    const [mx, my] = getCanvasXY(t.clientX, t.clientY);
-    const s = stateRef.current;
-    if (!s) return;
-    shoot(s, true, mx, my);
+  // ── Next Level Progression ────────────────────────────────────────────────
+  const nextLevel = () => {
+    const nextIdx = (levelIdx + 1) % LEVELS_CONFIG.length;
+    startLevel(nextIdx);
   };
 
-  // ── Main Game / Render Loop ──────────────────────────────────────────────
+  // ── Game Canvas & Physics Loop ────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
-    let last = 0;
 
-    // Initial resize to establish canvas coordinate space
-    resize();
+    // Sizing: Fixed portrait mobile frame (e.g. 9:16 aspect ratio or container bounds)
+    const resizeCanvas = () => {
+      const rect = container.getBoundingClientRect();
+      const W = Math.max(280, Math.floor(rect.width));
+      const H = Math.max(380, Math.floor(rect.height));
+      canvas.width = W;
+      canvas.height = H;
 
-    // Initialize state immediately so the arena & guns NEVER appear blank
-    const { W, H } = sizeRef.current;
-    if (!stateRef.current) {
-      stateRef.current = initState(0, W, H);
-    }
+      if (!stateRef.current) {
+        stateRef.current = initLevelState(0, W, H);
+      } else {
+        stateRef.current.W = W;
+        stateRef.current.H = H;
+      }
+    };
 
-    const loop = (ts) => {
-      const dt = Math.min((ts - (last || ts)) / 1000, 0.05);
-      last = ts;
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-      const { W, H } = sizeRef.current;
+    let lastTime = performance.now();
+
+    // ── MAIN TICK & RENDER ─────────────────────────────────────────────────
+    const tick = (now) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
       const s = stateRef.current;
+      if (!s) {
+        animFrameRef.current = requestAnimationFrame(tick);
+        return;
+      }
 
-      // ── Draw Arena Background ──────────────────────────────────────────
-      const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, '#0a0f1d');
-      bg.addColorStop(0.5, '#0f172a');
-      bg.addColorStop(1, '#1e1b4b');
-      ctx.fillStyle = bg;
+      const { W, H, player, cpu } = s;
+
+      // 1. UPDATE MOVING OBSTACLES
+      s.obstacles.forEach((obs) => {
+        if (obs.type === 'moving_x') {
+          obs.time += dt * (obs.speed || 1.2);
+          const range = W * 0.25;
+          obs.currX = obs.pixelX + Math.sin(obs.time) * range;
+        } else {
+          obs.currX = obs.pixelX;
+        }
+      });
+
+      // 2. CPU AI LOGIC
+      if (phaseRef.current === 'playing') {
+        cpu.timer -= dt * 1000;
+
+        // Angle from CPU to Player
+        const angleToPlayer = Math.atan2(player.y - cpu.y, player.x - cpu.x);
+        const angleDiff = Math.abs(normAngle(cpu.angle - angleToPlayer));
+
+        // CPU shoots when muzzle points roughly toward player and timer is ready
+        if (cpu.timer <= 0 && angleDiff < s.cfg.cpuTol) {
+          fireGun(s, false);
+          cpu.timer = s.cfg.cpuDelay + (Math.random() - 0.5) * 400;
+        }
+      }
+
+      // 3. GUN RIGID-BODY PHYSICS & ROTATION
+      const updateGunPhysics = (gun, baseSpinRate) => {
+        // Natural continuous baseline rotation + drag decay toward baseline
+        gun.spin += (baseSpinRate - gun.spin) * 0.035;
+        gun.angle += gun.spin * dt;
+
+        // Air Drag damping
+        gun.vx *= 0.984;
+        gun.vy *= 0.984;
+
+        // Position integration
+        gun.x += gun.vx;
+        gun.y += gun.vy;
+
+        // Closed Rectangular Arena Boundaries (Invisible Bouncy Walls)
+        const pad = gun.radius + 6;
+        const restitution = 0.88;
+
+        if (gun.x < pad) {
+          gun.x = pad;
+          gun.vx = Math.abs(gun.vx) * restitution;
+          gun.spin += (Math.random() - 0.5) * 1.5;
+        } else if (gun.x > W - pad) {
+          gun.x = W - pad;
+          gun.vx = -Math.abs(gun.vx) * restitution;
+          gun.spin += (Math.random() - 0.5) * 1.5;
+        }
+
+        if (gun.y < pad) {
+          gun.y = pad;
+          gun.vy = Math.abs(gun.vy) * restitution;
+          gun.spin += (Math.random() - 0.5) * 1.5;
+        } else if (gun.y > H - pad) {
+          gun.y = H - pad;
+          gun.vy = -Math.abs(gun.vy) * restitution;
+          gun.spin += (Math.random() - 0.5) * 1.5;
+        }
+
+        // Obstacle Collisions for Gun
+        s.obstacles.forEach((obs) => {
+          const ox = obs.currX - obs.pixelW / 2;
+          const oy = obs.pixelY - obs.pixelH / 2;
+          const ow = obs.pixelW;
+          const oh = obs.pixelH;
+
+          // Closest point on obstacle
+          const cx = Math.max(ox, Math.min(gun.x, ox + ow));
+          const cy = Math.max(oy, Math.min(gun.y, oy + oh));
+          const dist = Math.hypot(gun.x - cx, gun.y - cy);
+
+          if (dist < gun.radius) {
+            const overlap = gun.radius - dist;
+            const nx = (gun.x - cx) / (dist || 1);
+            const ny = (gun.y - cy) / (dist || 1);
+            gun.x += nx * overlap;
+            gun.y += ny * overlap;
+            gun.vx = nx * Math.abs(gun.vx) * restitution;
+            gun.vy = ny * Math.abs(gun.vy) * restitution;
+            gun.spin += (Math.random() - 0.5) * 2;
+          }
+        });
+
+        // Flash timer
+        if (gun.flash > 0) gun.flash--;
+
+        // Motion blur ghost recording (every ~50ms while spinning)
+        if (now - gun.lastGhostTs > 45) {
+          gun.lastGhostTs = now;
+          gun.ghosts.push({
+            x: gun.x,
+            y: gun.y,
+            angle: gun.angle,
+            length: gun.length,
+            height: gun.height,
+            alpha: 1.0,
+          });
+          if (gun.ghosts.length > 7) gun.ghosts.shift();
+        }
+
+        // Decay ghosts
+        gun.ghosts.forEach((g) => {
+          g.alpha -= 0.055;
+        });
+        gun.ghosts = gun.ghosts.filter((g) => g.alpha > 0.02);
+      };
+
+      updateGunPhysics(player, 1.6); // Green gun base clockwise spin
+      updateGunPhysics(cpu, -1.5);   // Red gun base counter-clockwise spin
+
+      // 4. BULLETS MOVEMENT, RICOCHET & HIT DETECTION
+      for (let i = s.bullets.length - 1; i >= 0; i--) {
+        const b = s.bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // Trail recording
+        b.trail.push({ x: b.x, y: b.y, alpha: 1.0 });
+        if (b.trail.length > 6) b.trail.shift();
+
+        // Boundary Ricochet
+        let bounced = false;
+        if (b.x < 8 || b.x > W - 8) {
+          b.vx *= -0.92;
+          b.x = Math.max(9, Math.min(W - 9, b.x));
+          bounced = true;
+        }
+        if (b.y < 8 || b.y > H - 8) {
+          b.vy *= -0.92;
+          b.y = Math.max(9, Math.min(H - 9, b.y));
+          bounced = true;
+        }
+
+        // Obstacle Ricochet
+        s.obstacles.forEach((obs) => {
+          const ox = obs.currX - obs.pixelW / 2;
+          const oy = obs.pixelY - obs.pixelH / 2;
+          const ow = obs.pixelW;
+          const oh = obs.pixelH;
+
+          if (b.x >= ox && b.x <= ox + ow && b.y >= oy && b.y <= oy + oh) {
+            bounced = true;
+            // Reflect based on closest face
+            const leftD = Math.abs(b.x - ox);
+            const rightD = Math.abs(b.x - (ox + ow));
+            const topD = Math.abs(b.y - oy);
+            const bottomD = Math.abs(b.y - (oy + oh));
+            const minD = Math.min(leftD, rightD, topD, bottomD);
+
+            if (minD === leftD || minD === rightD) b.vx *= -0.9;
+            else b.vy *= -0.9;
+          }
+        });
+
+        if (bounced) {
+          b.bounces++;
+          playSound('ricochet', soundRef.current);
+
+          // Ricochet sparks
+          for (let p = 0; p < 4; p++) {
+            s.particles.push({
+              x: b.x,
+              y: b.y,
+              vx: (Math.random() - 0.5) * 5,
+              vy: (Math.random() - 0.5) * 5,
+              life: 1.0,
+              decay: 0.12,
+              col: '#fef08a',
+              size: 2,
+            });
+          }
+
+          if (b.bounces > b.maxBounces) {
+            s.bullets.splice(i, 1);
+            continue;
+          }
+        }
+
+        // Bullet Hit Gun Target Detection
+        if (phaseRef.current === 'playing') {
+          const target = b.isPlayer ? cpu : player;
+          const dist = Math.hypot(b.x - target.x, b.y - target.y);
+
+          if (dist < target.radius) {
+            // Hit!
+            target.hp -= 1;
+            target.flash = 12;
+            s.screenShake = 6;
+            playSound('hit', soundRef.current);
+
+            // Impact impulse
+            target.vx += b.vx * 0.35;
+            target.vy += b.vy * 0.35;
+
+            // Explosion sparks
+            const hitColor = b.isPlayer ? '#ef4444' : '#22c55e';
+            for (let k = 0; k < 22; k++) {
+              const a = Math.random() * Math.PI * 2;
+              const sp = Math.random() * 7 + 2;
+              s.particles.push({
+                x: b.x,
+                y: b.y,
+                vx: Math.cos(a) * sp,
+                vy: Math.sin(a) * sp,
+                life: 1.0,
+                decay: 0.045,
+                col: hitColor,
+                size: Math.random() * 3.5 + 1.5,
+              });
+            }
+
+            s.bullets.splice(i, 1);
+
+            // Update HUD
+            setHud((h) => ({ ...h, playerHp: player.hp, cpuHp: cpu.hp }));
+
+            // Check Win / Lose
+            if (cpu.hp <= 0) {
+              setGamePhase('win');
+              playSound('win', soundRef.current);
+              setCoins((c) => {
+                const updated = c + 50;
+                localStorage.setItem('duel_coins', updated.toString());
+                return updated;
+              });
+            } else if (player.hp <= 0) {
+              setGamePhase('gameover');
+              playSound('gameover', soundRef.current);
+            }
+          }
+        }
+      }
+
+      // 5. UPDATE PARTICLES & SHELLS
+      s.particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.93;
+        p.vy *= 0.93;
+        p.life -= p.decay;
+      });
+      s.particles = s.particles.filter((p) => p.life > 0.05);
+
+      s.ejectedShells.forEach((sh) => {
+        sh.x += sh.vx;
+        sh.y += sh.vy;
+        sh.vy += 0.2; // gravity
+        sh.rot += sh.spin * dt;
+        sh.life -= 0.02;
+      });
+      s.ejectedShells = s.ejectedShells.filter((sh) => sh.life > 0.05);
+
+      // ── DRAWING SCENE ──────────────────────────────────────────────────────
+      ctx.save();
+
+      // Screen Shake
+      if (s.screenShake > 0) {
+        const sx = (Math.random() - 0.5) * s.screenShake;
+        const sy = (Math.random() - 0.5) * s.screenShake;
+        ctx.translate(sx, sy);
+        s.screenShake *= 0.85;
+        if (s.screenShake < 0.3) s.screenShake = 0;
+      }
+
+      // 1. Dark Metallic Textured Arena Floor
+      const arenaGrad = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, H * 0.7);
+      arenaGrad.addColorStop(0, '#1c1f26');
+      arenaGrad.addColorStop(0.7, '#13161c');
+      arenaGrad.addColorStop(1, '#0b0d11');
+      ctx.fillStyle = arenaGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // Cyber Grid
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+      // Subtle metallic grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
       ctx.lineWidth = 1;
-      const gridSize = Math.max(28, Math.min(45, Math.floor(W / 16)));
-      for (let x = 0; x < W; x += gridSize) {
+      const step = 36;
+      for (let x = 0; x < W; x += step) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       }
-      for (let y = 0; y < H; y += gridSize) {
+      for (let y = 0; y < H; y += step) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
 
-      // Center Division Line
-      ctx.save();
-      ctx.setLineDash([8, 12]);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      // Outer Arena Border Inner Shadow
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      if (H > W) {
-        // Horizontal division for Portrait
-        ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2);
-      } else {
-        // Vertical division for Landscape
-        ctx.moveTo(W / 2, 0); ctx.lineTo(W/ 2, H);
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      // Outer Arena Neon Border
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-      ctx.lineWidth = 2.5;
       ctx.strokeRect(3, 3, W - 6, H - 6);
 
-      // Inner faint glow border
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(6, 6, W - 12, H - 12);
+      // 2. Arena Obstacles (Dark brushed metal with neon edges)
+      s.obstacles.forEach((obs) => {
+        const ox = obs.currX - obs.pixelW / 2;
+        const oy = obs.pixelY - obs.pixelH / 2;
+        const ow = obs.pixelW;
+        const oh = obs.pixelH;
 
-      if (s) {
-        // ── Idle Floating Motion in Menu / Countdown ───────────────────────
-        if (phaseRef.current === 'menu' || phaseRef.current === 'countdown') {
-          const hover = Math.sin(ts * 0.003) * 0.4;
-          s.py += hover;
-          s.cy -= hover;
-        }
+        ctx.save();
+        // Obstacle shadow
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
 
-        // ── CPU AI Logic ──────────────────────────────────────────────────
-        if (phaseRef.current === 'playing') {
-          s.cTimer -= dt * 1000;
-          if (s.cTimer <= 0) {
-            const sc = s.lv.scatter;
-            const targetX = s.px + (Math.random() - 0.5) * sc;
-            const targetY = s.py + (Math.random() - 0.5) * sc;
-            shoot(s, false, targetX, targetY);
-            s.cTimer = s.lv.cpuMs + (Math.random() - 0.5) * 350;
-          }
-        }
+        // Obstacle body
+        const obsGrad = ctx.createLinearGradient(ox, oy, ox, oy + oh);
+        obsGrad.addColorStop(0, '#334155');
+        obsGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = obsGrad;
+        ctx.beginPath();
+        ctx.roundRect(ox, oy, ow, oh, [4, 4, 4, 4]);
+        ctx.fill();
 
-        // ── Physics: Gun Movement & Wall Collisions ───────────────────────
-        const GW = 52, GH = 20;
-        const updateGun = (isP) => {
-          let x = isP ? s.px : s.cx;
-          let y = isP ? s.py : s.cy;
-          let vx = isP ? s.pvx : s.cvx;
-          let vy = isP ? s.pvy : s.cvy;
-          let spin = isP ? s.pSpin : s.cSpin;
+        // Neon outline
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-          vx *= 0.88;
-          vy *= 0.88;
-          spin *= 0.85;
+        ctx.restore();
+      });
 
-          x += vx;
-          y += vy;
+      // 3. Render Motion Blur Ghosts
+      renderGhostTrails(ctx, player.ghosts, true);
+      renderGhostTrails(ctx, cpu.ghosts, false);
 
-          const hw = GW / 2, hh = GH / 2;
-          if (x - hw < 6) { x = hw + 6; vx = Math.abs(vx) * 0.6; spin *= -0.5; }
-          if (x + hw > W - 6) { x = W - hw - 6; vx = -Math.abs(vx) * 0.6; spin *= -0.5; }
-          if (y - hh < 6) { y = hh + 6; vy = Math.abs(vy) * 0.6; spin *= -0.5; }
-          if (y + hh > H - 6) { y = H - hh - 6; vy = -Math.abs(vy) * 0.6; spin *= -0.5; }
+      // 4. Render Ejected Shell Casings
+      s.ejectedShells.forEach((sh) => {
+        ctx.save();
+        ctx.translate(sh.x, sh.y);
+        ctx.rotate(sh.rot);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(-2.5, -1, 5, 2.2);
+        ctx.restore();
+      });
 
-          if (isP) {
-            s.px = x; s.py = y; s.pvx = vx; s.pvy = vy; s.pSpin = spin; s.pAngle += spin;
-          } else {
-            s.cx = x; s.cy = y; s.cvx = vx; s.cvy = vy; s.cSpin = spin; s.cAngle += spin;
-          }
-        };
-
-        updateGun(true);
-        updateGun(false);
-
-        // ── Bullets with Wall Ricochet & Hit Detection ─────────────────────
-        const processBullets = (bullets, isPlayerBullet) => {
-          for (let i = bullets.length - 1; i >= 0; i--) {
-            const b = bullets[i];
-            b.x += b.vx;
-            b.y += b.vy;
-
-            // Bounce on boundary
-            let bounced = false;
-            if (b.x < 6 || b.x > W - 6) {
-              b.vx *= -0.85;
-              b.x = Math.max(7, Math.min(W - 7, b.x));
-              bounced = true;
-            }
-            if (b.y < 6 || b.y > H - 6) {
-              b.vy *= -0.85;
-              b.y = Math.max(7, Math.min(H - 7, b.y));
-              bounced = true;
-            }
-
-            if (bounced) {
-              b.bounces = (b.bounces || 0) + 1;
-              burst(s, b.x, b.y, '#fef08a', 4);
-              playTone(850, 600, 0.04, soundRef.current, 'sine');
-              if (b.bounces > 4) {
-                bullets.splice(i, 1);
-                continue;
-              }
-            }
-
-            // Low velocity cleanup
-            if (Math.hypot(b.vx, b.vy) < 0.8) {
-              bullets.splice(i, 1);
-              continue;
-            }
-
-            if (phaseRef.current !== 'playing') continue;
-
-            // Target check
-            const tx = isPlayerBullet ? s.cx : s.px;
-            const ty = isPlayerBullet ? s.cy : s.py;
-            const dist = Math.hypot(b.x - tx, b.y - ty);
-
-            if (dist < 32) {
-              bullets.splice(i, 1);
-              burst(s, tx, ty, isPlayerBullet ? '#38bdf8' : '#ef4444', 28);
-              playTone(600, 90, 0.22, soundRef.current, 'sawtooth');
-
-              const hitAngle = Math.atan2(b.vy, b.vx);
-              const hitSpin = (Math.sin(hitAngle) >= 0 ? -1 : 1) * 3.2;
-
-              if (isPlayerBullet) {
-                s.cHp = Math.max(0, s.cHp - 1);
-                s.cFlash = 24;
-                s.cSpin = hitSpin;
-                s.cvx += b.vx * 0.7;
-                s.cvy += b.vy * 0.7;
-                s.score += 150;
-                setHud((h) => ({ ...h, cHp: s.cHp, score: s.score }));
-
-                // Level victory
-                if (s.cHp <= 0) {
-                  burst(s, tx, ty, '#fbbf24', 45);
-                  playTone(880, 1760, 0.45, soundRef.current, 'triangle');
-                  syncPhase('overlay');
-                  setOverlay(lvlRef.current + 1 >= LEVELS.length ? 'win' : 'levelclear');
-                  setHud((h) => ({ ...h, cHp: 0, score: s.score }));
-                }
-              } else {
-                s.pHp = Math.max(0, s.pHp - 1);
-                s.pFlash = 28;
-                s.pSpin = -hitSpin;
-                s.pvx += b.vx * 0.7;
-                s.pvy += b.vy * 0.7;
-                setHud((h) => ({ ...h, pHp: s.pHp }));
-
-                // Player defeat
-                if (s.pHp <= 0) {
-                  burst(s, tx, ty, '#f87171', 45);
-                  playTone(280, 50, 0.5, soundRef.current, 'sawtooth');
-                  syncPhase('overlay');
-                  setOverlay('gameover');
-                  setHud((h) => ({ ...h, pHp: 0 }));
-                }
-              }
-            }
-          }
-        };
-
-        processBullets(s.pBullets, true);
-        processBullets(s.cBullets, false);
-
-        if (s.pFlash > 0) s.pFlash--;
-        if (s.cFlash > 0) s.cFlash--;
-
-        // ── Render Particles (safely bounded) ──────────────────────────────
-        s.particles = s.particles.filter((p) => p.life > 0.02);
-        s.particles.forEach((p) => {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vx *= 0.92;
-          p.vy *= 0.92;
-          p.life -= 0.035;
-
-          const alpha = Math.max(0, Math.min(1, p.life));
-          const rad = Math.max(0.2, 3.2 * alpha + 0.4);
-
-          ctx.save();
-          ctx.globalAlpha = alpha;
-          ctx.fillStyle = p.col;
+      // 5. Render Bullets & Glowing Trails
+      s.bullets.forEach((b) => {
+        // Trail
+        b.trail.forEach((t) => {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
+          ctx.arc(t.x, t.y, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = b.isPlayer ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)';
           ctx.fill();
-          ctx.restore();
         });
 
-        // ── Render Bullets ────────────────────────────────────────────────
-        const allBullets = [
-          ...s.pBullets.map((b) => ({ b, col: '#38bdf8' })),
-          ...s.cBullets.map((b) => ({ b, col: '#f97316' })),
-        ];
+        // Golden metallic bullet head
+        ctx.save();
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
 
-        allBullets.forEach(({ b, col }) => {
-          ctx.save();
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = col;
-          ctx.fillStyle = col;
-          ctx.beginPath();
-          ctx.arc(b.x, b.y, 4.5, 0, Math.PI * 2);
-          ctx.fill();
+      // 6. Render Guns
+      renderGunModel(ctx, player, true);
+      renderGunModel(ctx, cpu, false);
 
-          // Tracer glow
-          ctx.globalAlpha = 0.4;
-          ctx.beginPath();
-          ctx.arc(b.x - b.vx * 1.5, b.y - b.vy * 1.5, 3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-
-        // ── Render Guns ────────────────────────────────────────────────────
-        drawGun(ctx, s.px, s.py, s.pAngle, '#38bdf8', s.pFlash, true);
-        drawGun(ctx, s.cx, s.cy, s.cAngle, '#ef4444', s.cFlash, false);
-
-        // Name tags over pistols
-        ctx.font = `bold ${Math.max(11, Math.min(14, W * 0.025))}px monospace`;
+      // Labels over guns (Inspired by reference screenshot)
+      const renderLabel = (text, gun, isPlayer) => {
+        ctx.save();
+        ctx.font = 'bold 11px Fredoka, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
-        ctx.fillText('YOU', s.px, s.py - 30);
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
-        ctx.fillText('CPU', s.cx, s.cy - 30);
-      }
+        ctx.fillStyle = isPlayer ? '#4ade80' : '#f87171';
+        ctx.shadowColor = isPlayer ? 'rgba(74, 222, 128, 0.6)' : 'rgba(248, 113, 113, 0.6)';
+        ctx.shadowBlur = 8;
 
-      rafRef.current = requestAnimationFrame(loop);
+        // Pill badge
+        const badgeY = gun.y - gun.radius - 12;
+        ctx.strokeStyle = isPlayer ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(gun.x - 26, badgeY - 10, 52, 15, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isPlayer ? '#4ade80' : '#f87171';
+        ctx.fillText(text, gun.x, badgeY + 1);
+        ctx.restore();
+      };
+
+      renderLabel('PLAYER', player, true);
+      renderLabel('CPU', cpu, false);
+
+      // 7. Render Particles
+      s.particles.forEach((p) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.col;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(0.5, p.size * p.life), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.restore();
+
+      animFrameRef.current = requestAnimationFrame(tick);
     };
 
-    loopRef.current = loop;
-    rafRef.current = requestAnimationFrame(loop);
-
-    const ro = new ResizeObserver(() => resize());
-    ro.observe(wrap);
-    window.addEventListener('resize', resize);
+    animFrameRef.current = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animFrameRef.current);
+      window.removeEventListener('resize', resizeCanvas);
     };
-  }, [resize]);
-
-  const currentLevel = LEVELS[Math.min(lvlIdx, LEVELS.length - 1)];
+  }, [initLevelState]);
 
   return (
-    <div className="flex flex-col w-full h-full bg-slate-950 overflow-hidden select-none" style={{ minHeight: 0 }}>
-      {/* ── Top HUD ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 md:px-5 py-2.5 bg-slate-900/90 border-b border-slate-800 flex-shrink-0 text-xs backdrop-blur-md">
-        {/* Player HP */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-cyan-400 font-extrabold text-xs tracking-wider">YOU</span>
-          <div className="flex gap-0.5">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className={`text-sm md:text-base transition-colors ${
-                  i < hud.pHp ? 'text-cyan-400 drop-shadow-[0_0_8px_#38bdf8]' : 'text-slate-700'
-                }`}
-              >
-                ♥
-              </span>
-            ))}
+    <div className="relative w-full h-full flex items-center justify-center bg-slate-950 p-1 md:p-3 overflow-hidden select-none touch-none">
+      {/* ── Outer Mobile Smartphone Chassis (Matches reference visual style) ── */}
+      <div
+        className="relative w-full max-w-[420px] h-full max-h-[740px] bg-[#181a20] rounded-[36px] p-2.5 sm:p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border-[3px] border-[#383d47] flex flex-col overflow-hidden"
+        style={{
+          boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.85)',
+        }}
+      >
+        {/* Phone Top Bezel with Speaker Slit & Sensors */}
+        <div className="flex-shrink-0 flex items-center justify-between px-3 py-1.5 text-slate-400 text-xs border-b border-white/5 bg-[#121418] rounded-t-[24px]">
+          <span className="font-extrabold tracking-wider text-slate-300 font-mono text-[11px]">
+            LEVEL {hud.level}
+          </span>
+
+          {/* Speaker earpiece slit */}
+          <div className="w-12 h-1.5 bg-black/60 rounded-full border border-white/10" />
+
+          {/* Sound & Battery indicators */}
+          <div className="flex items-center gap-2 text-[11px]">
+            <button
+              onClick={toggleSound}
+              className="text-slate-400 hover:text-white transition p-0.5"
+            >
+              <i className={`fa-solid ${soundOn ? 'fa-volume-high' : 'fa-volume-xmark text-red-400'}`} />
+            </button>
+            <span className="font-mono text-[10px] text-slate-500">🔋 85%</span>
           </div>
         </div>
 
-        {/* Level badge & score */}
-        <div className="text-center flex items-center gap-2 md:gap-3">
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-wider border ${currentLevel.badge}`}>
-            Lv.{hud.lvl} {hud.label}
-          </span>
-          <span className="text-yellow-400 font-black text-xs md:text-sm">
-            {hud.score} <span className="text-[10px] text-slate-500 font-normal">PTS</span>
-          </span>
-        </div>
-
-        {/* CPU HP + Sound */}
-        <div className="flex items-center gap-3">
+        {/* ── Combat Header (Player HP vs CPU HP + Coins) ────────────────── */}
+        <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 bg-[#14171d] border-b border-white/5">
+          {/* Player HP (Green) */}
           <div className="flex items-center gap-1.5">
+            <span className="text-emerald-400 font-extrabold text-[11px] tracking-wide">P1</span>
             <div className="flex gap-0.5">
-              {[...Array(hud.cMax)].map((_, i) => (
+              {[...Array(3)].map((_, i) => (
                 <span
                   key={i}
-                  className={`text-sm md:text-base transition-colors ${
-                    i < hud.cHp ? 'text-red-500 drop-shadow-[0_0_8px_#ef4444]' : 'text-slate-700'
+                  className={`text-sm transition-colors ${
+                    i < hud.playerHp ? 'text-emerald-400 drop-shadow-[0_0_6px_#22c55e]' : 'text-slate-700'
                   }`}
                 >
                   ♥
                 </span>
               ))}
             </div>
-            <span className="text-red-400 font-extrabold text-xs tracking-wider">CPU</span>
           </div>
 
-          <button
-            onClick={toggleSound}
-            className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition"
-            title={soundOn ? 'Mute' : 'Unmute'}
-          >
-            <i className={`fa-solid ${soundOn ? 'fa-volume-high' : 'fa-volume-xmark text-red-400'} text-xs`} />
-          </button>
-        </div>
-      </div>
+          {/* Coins Display */}
+          <div className="bg-black/40 px-2.5 py-0.5 rounded-full border border-yellow-500/20 flex items-center gap-1.5 text-yellow-400 font-bold text-xs">
+            <span className="text-sm">🪙</span>
+            <span>{coins}</span>
+          </div>
 
-      {/* ── Canvas Arena Wrapper ────────────────────────────────────────── */}
-      <div ref={wrapRef} className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
-        <canvas
-          ref={canvasRef}
-          onClick={handleClick}
-          onTouchStart={handleTouch}
-          className="absolute inset-0 w-full h-full block"
-          style={{
-            cursor: phase === 'playing' ? 'crosshair' : 'default',
-            touchAction: 'none',
-          }}
-        />
-
-        {/* ── COUNTDOWN OVERLAY ─────────────────────────────────────────── */}
-        {phase === 'countdown' && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="text-center animate-pulse">
-              <span
-                className="text-6xl md:text-8xl font-black text-white tracking-widest"
-                style={{
-                  textShadow: '0 0 35px #38bdf8, 0 0 70px #38bdf8',
-                  fontFamily: 'Fredoka, sans-serif',
-                }}
-              >
-                {countdown}
-              </span>
+          {/* CPU HP (Red) */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex gap-0.5">
+              {[...Array(hud.cpuHp)].map((_, i) => (
+                <span
+                  key={i}
+                  className="text-sm text-red-500 drop-shadow-[0_0_6px_#ef4444]"
+                >
+                  ♥
+                </span>
+              ))}
             </div>
+            <span className="text-red-400 font-extrabold text-[11px] tracking-wide">CPU</span>
           </div>
-        )}
+        </div>
 
-        {/* ── START MENU OVERLAY ────────────────────────────────────────── */}
-        {phase === 'menu' && (
-          <div className="absolute inset-0 z-20 bg-slate-950/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center">
-            <div className="max-w-md w-full bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/30">
+        {/* ── Central Physics Gameplay Arena Frame ───────────────────────── */}
+        <div
+          ref={containerRef}
+          onClick={handlePlayerShoot}
+          className="flex-1 relative overflow-hidden bg-black cursor-crosshair active:scale-[0.998] transition-transform"
+          style={{ minHeight: 0 }}
+        >
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+
+          {/* ── START SCREEN OVERLAY ──────────────────────────────────────── */}
+          {phase === 'start' && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-3xl shadow-xl shadow-emerald-500/25 mb-3 border border-emerald-400/40">
                 🔫
               </div>
-              <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-wide" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-                  Pistol Duel
-                </h2>
-                <p className="text-slate-400 text-xs md:text-sm mt-1">
-                  Aim & shoot by tapping anywhere. Watch gun recoil & physics!
-                </p>
-              </div>
+              <h2
+                className="text-2xl md:text-3xl font-black text-white tracking-wider mb-1"
+                style={{ fontFamily: 'Fredoka, sans-serif' }}
+              >
+                PISTOL DUEL
+              </h2>
+              <p className="text-slate-300 text-xs max-w-xs mb-5 font-medium leading-relaxed">
+                Watch the rotating green gun. Time your shot when the muzzle aligns with the red CPU!
+                <br />
+                <span className="text-emerald-400 font-bold">Every shot recoils & spins your gun.</span>
+              </p>
 
-              {/* Levels Preview */}
-              <div className="flex gap-1.5 flex-wrap justify-center py-1">
-                {LEVELS.map((l, i) => (
-                  <span
-                    key={l.level}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      i === 0 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500' : 'bg-slate-800 text-slate-400 border-slate-700'
-                    }`}
-                  >
-                    Lv.{l.level} {l.label}
-                  </span>
-                ))}
-              </div>
-
-              {/* Start Button */}
               <button
                 onClick={() => startLevel(0)}
-                className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 text-white font-extrabold py-3.5 px-6 rounded-2xl text-base shadow-xl shadow-cyan-500/25 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full max-w-xs bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white font-black py-3.5 px-6 rounded-2xl text-base shadow-xl shadow-emerald-500/30 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
               >
-                <i className="fa-solid fa-play text-sm" /> START DUEL
+                <i className="fa-solid fa-play" /> Tap to Start
               </button>
 
               {onClose && (
                 <button
                   onClick={onClose}
-                  className="text-slate-400 hover:text-white text-xs underline cursor-pointer"
+                  className="mt-4 text-slate-500 hover:text-slate-300 text-xs underline cursor-pointer"
                 >
-                  Back to Games
+                  Exit to Portal
                 </button>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ── LEVEL CLEAR OVERLAY ───────────────────────────────────────── */}
-        {overlay === 'levelclear' && (
-          <div className="absolute inset-0 z-20 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-            <div className="max-w-sm w-full bg-slate-900 border border-green-500/40 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center gap-4">
-              <div className="text-5xl animate-bounce">🎉</div>
-              <div>
-                <h3 className="text-2xl font-extrabold text-green-400" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-                  Level {hud.lvl} Cleared!
-                </h3>
-                <p className="text-slate-300 text-xs mt-1">
-                  Target eliminated! Total Score: <strong className="text-yellow-400 font-bold">{hud.score}</strong>
-                </p>
-              </div>
-
-              <button
-                onClick={() => startLevel(lvlIdx + 1)}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-sm shadow-lg shadow-green-500/30 hover:brightness-110 active:scale-95 transition cursor-pointer flex items-center justify-center gap-2"
+          {/* ── WIN OVERLAY ──────────────────────────────────────────────── */}
+          {phase === 'win' && (
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+              <div className="text-6xl animate-bounce mb-2">🏆</div>
+              <h2
+                className="text-3xl font-black text-yellow-400 tracking-wider mb-1"
+                style={{ fontFamily: 'Fredoka, sans-serif' }}
               >
-                Next Level: {LEVELS[Math.min(lvlIdx + 1, 4)].label} →
-              </button>
+                YOU WIN!
+              </h2>
+              <p className="text-slate-300 text-xs mb-3 font-medium">
+                CPU Eliminated! Level {hud.level} Cleared.
+              </p>
 
-              {onClose && (
-                <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xs underline">
-                  Exit
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── WIN OVERLAY ───────────────────────────────────────────────── */}
-        {overlay === 'win' && (
-          <div className="absolute inset-0 z-20 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-            <div className="max-w-sm w-full bg-slate-900 border border-yellow-500/40 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center gap-4">
-              <div className="text-5xl animate-bounce">🏆</div>
-              <div>
-                <h3 className="text-3xl font-extrabold text-yellow-400" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-                  VICTORY!
-                </h3>
-                <p className="text-slate-300 text-xs mt-1">
-                  You conquered all 5 levels! Grand Score:{' '}
-                  <strong className="text-yellow-400 text-sm font-bold">{hud.score}</strong>
-                </p>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl px-5 py-2.5 mb-5 flex items-center gap-2 text-yellow-400 font-black text-sm">
+                <span>🪙 +50 Coins</span>
               </div>
 
-              <button
-                onClick={() => startLevel(0)}
-                className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-black py-3 px-6 rounded-2xl text-sm shadow-lg shadow-yellow-500/30 hover:brightness-110 active:scale-95 transition cursor-pointer"
-              >
-                🔄 Play Again
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── GAME OVER OVERLAY ─────────────────────────────────────────── */}
-        {overlay === 'gameover' && (
-          <div className="absolute inset-0 z-20 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-            <div className="max-w-sm w-full bg-slate-900 border border-red-500/40 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center gap-4">
-              <div className="text-5xl">💀</div>
-              <div>
-                <h3 className="text-2xl font-extrabold text-red-500" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-                  Defeated!
-                </h3>
-                <p className="text-slate-400 text-xs mt-1">
-                  You were eliminated on Level {hud.lvl} ({hud.label}).
-                </p>
-              </div>
-
-              <div className="flex gap-2.5 w-full">
+              <div className="flex flex-col gap-2 w-full max-w-xs">
                 <button
-                  onClick={() => startLevel(lvlIdx)}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold py-3 px-4 rounded-2xl text-xs hover:brightness-110 active:scale-95 transition cursor-pointer"
+                  onClick={nextLevel}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-black py-3 px-6 rounded-2xl text-sm shadow-xl shadow-yellow-500/30 hover:brightness-110 active:scale-95 transition cursor-pointer uppercase tracking-wider"
                 >
-                  🔄 Retry Level
+                  Next Level →
                 </button>
                 <button
-                  onClick={() => {
-                    setOverlay(null);
-                    syncPhase('menu');
-                    setLvlIdx(0);
-                  }}
-                  className="bg-slate-800 text-slate-300 hover:text-white font-bold py-3 px-4 rounded-2xl text-xs hover:bg-slate-700 transition cursor-pointer"
+                  onClick={() => startLevel(levelIdx)}
+                  className="w-full bg-slate-800 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs hover:bg-slate-700 transition cursor-pointer"
                 >
-                  Menu
+                  Replay Level
                 </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* ── Bottom Controls Footer ──────────────────────────────────────── */}
-      <div className="flex-shrink-0 bg-slate-900/90 border-t border-slate-800 px-3 py-1.5 text-[10px] md:text-xs text-slate-400 flex justify-between items-center">
-        <span>🎯 Tap / Click anywhere to aim & shoot · Gun recoils backwards</span>
-        <span className="hidden sm:inline">Bullets ricochet off walls</span>
+          {/* ── GAME OVER OVERLAY ────────────────────────────────────────── */}
+          {phase === 'gameover' && (
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+              <div className="text-6xl mb-2">💀</div>
+              <h2
+                className="text-3xl font-black text-red-500 tracking-wider mb-1"
+                style={{ fontFamily: 'Fredoka, sans-serif' }}
+              >
+                GAME OVER
+              </h2>
+              <p className="text-slate-400 text-xs mb-6 font-medium">
+                You were eliminated on Level {hud.level}. Watch the timing!
+              </p>
+
+              <div className="flex flex-col gap-2 w-full max-w-xs">
+                <button
+                  onClick={() => startLevel(levelIdx)}
+                  className="w-full bg-gradient-to-r from-red-500 to-rose-600 text-white font-black py-3.5 px-6 rounded-2xl text-sm shadow-xl shadow-red-500/30 hover:brightness-110 active:scale-95 transition cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  <i className="fa-solid fa-rotate-left" /> Retry Level
+                </button>
+                <button
+                  onClick={() => setGamePhase('start')}
+                  className="w-full bg-slate-800 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs hover:bg-slate-700 transition cursor-pointer"
+                >
+                  Main Menu
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Phone Bottom Bezel with Instructional Footer ───────────────── */}
+        <div className="flex-shrink-0 py-2.5 px-3 bg-[#121418] rounded-b-[24px] border-t border-white/5 text-center flex flex-col items-center justify-center">
+          <p className="text-[10px] sm:text-[11px] font-black tracking-widest text-slate-400 uppercase animate-pulse">
+            TAP ANYWHERE TO SHOOT — RECOIL IS POWER!
+          </p>
+        </div>
       </div>
     </div>
   );
