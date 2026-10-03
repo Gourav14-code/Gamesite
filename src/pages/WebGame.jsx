@@ -6,7 +6,7 @@ import BikeRacer  from './BikeRacer';
 const GAMES_DATA = [
   { id: 0, title: 'Pistol Duel',         category: 'Action', size: '2x2', color: 'from-slate-800 to-indigo-900', icon: 'fa-crosshairs',   likes: '99%', playable: true, duel: true  },
   { id:-1, title: '3D Bike Racer',       category: 'Racing', size: '2x2', color: 'from-blue-800 to-cyan-700',   icon: 'fa-motorcycle',   likes: '97%', playable: true, bike: true  },
-  { id: 1, title: 'Pistol Target Shoot', category: 'Action', size: '2x1', color: 'from-red-500 to-amber-600',   icon: 'fa-gun',          likes: '98%', playable: true  },
+  { id: 1, title: 'Pistol Duel (Level 2)', category: 'Action', size: '2x1', color: 'from-red-500 to-amber-600',   icon: 'fa-crosshairs',   likes: '98%', playable: true, duel: true  },
   { id: 2, title: 'Subway Surfers',      category: 'Arcade', size: '1x2', color: 'from-emerald-400 to-teal-600', icon: 'fa-person-running',likes: '95%', playable: false },
   { id: 3, title: 'Speed Racer 3D',      category: 'Racing', size: '2x1', color: 'from-blue-600 to-indigo-700',  icon: 'fa-car-side',     likes: '92%', playable: false },
   { id: 4, title: 'Temple Dash',         category: 'Action', size: '1x1', color: 'from-yellow-500 to-amber-700', icon: 'fa-person-hiking', likes: '91%', playable: false },
@@ -28,315 +28,9 @@ const SPAN_MAP = {
   '2x2': 'col-span-2 row-span-2',
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Pistol Shoot – canvas game component
-// ═══════════════════════════════════════════════════════════════════════════════
-function PistolGame({ containerRef }) {
-  const canvasRef   = useRef(null);
-  const stateRef    = useRef(null);   // mutable game state
-  const rafRef      = useRef(null);
-  const timerRef    = useRef(null);
-  const mouseRef    = useRef({ x: 0, y: 0 });
+// ─── Pistol Duel Arcade Integration ──────────────────────────────────────────
+// Both Pistol Duel entries in the catalog use the authentic physical arcade console component
 
-  const [phase, setPhase]   = useState('idle'); // idle | playing | over
-  const [hud, setHud]       = useState({ score: 0, streak: 0, ammo: 6, time: 30 });
-  const [finalStats, setFinalStats] = useState(null);
-  const [soundOn, setSoundOn] = useState(true);
-  const soundRef = useRef(true);
-  const audioRef = useRef(null);
-
-  // sync soundRef
-  useEffect(() => { soundRef.current = soundOn; }, [soundOn]);
-
-  // Audio helpers
-  const getAudioCtx = () => {
-    if (!audioRef.current) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (Ctx) audioRef.current = new Ctx();
-    }
-    return audioRef.current;
-  };
-
-  const playTone = useCallback((freq1, freq2, dur, type = 'sawtooth', vol = 0.25) => {
-    if (!soundRef.current) return;
-    try {
-      const ctx = getAudioCtx(); if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq1, ctx.currentTime);
-      if (freq2) osc.frequency.exponentialRampToValueAtTime(freq2, ctx.currentTime + dur);
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + dur);
-    } catch {}
-  }, []);
-
-  // Resize canvas to container
-  const resize = useCallback(() => {
-    const c = canvasRef.current;
-    const wrap = containerRef?.current || c?.parentElement;
-    if (!c || !wrap) return;
-    c.width  = wrap.clientWidth;
-    c.height = wrap.clientHeight;
-  }, [containerRef]);
-
-  useEffect(() => {
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, [resize]);
-
-  // ── Game loop ──────────────────────────────────────────────────────────────
-  const loop = useCallback(() => {
-    const s = stateRef.current;
-    const c = canvasRef.current;
-    if (!s || !c) return;
-    const ctx = c.getContext('2d');
-    const W = c.width, H = c.height;
-    const mx = mouseRef.current.x, my = mouseRef.current.y;
-
-    // Background
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, W, H);
-
-    // Grid
-    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-
-    // Bullet holes
-    s.holes = s.holes.filter(h => h.a > 0);
-    s.holes.forEach(h => {
-      ctx.beginPath(); ctx.arc(h.x, h.y, 4, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(0,0,0,${h.a})`; ctx.fill();
-      ctx.strokeStyle = `rgba(255,255,255,${h.a*0.3})`; ctx.stroke();
-      h.a -= 0.005;
-    });
-
-    // Targets
-    s.targets.forEach(t => {
-      t.x += t.vx; t.y += t.vy;
-      if (t.x - t.r < 0 || t.x + t.r > W) t.vx *= -1;
-      if (t.y - t.r < 0 || t.y + t.r > H) t.vy *= -1;
-
-      // Target rings
-      ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill();
-      ctx.beginPath(); ctx.arc(t.x, t.y, t.r*0.65, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
-      ctx.beginPath(); ctx.arc(t.x, t.y, t.r*0.3, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill();
-    });
-
-    // Particles
-    s.particles = s.particles.filter(p => p.a > 0);
-    s.particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.a -= 0.03;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(239,68,68,${p.a})`; ctx.fill();
-    });
-
-    // Crosshair
-    ctx.save();
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(mx, my, 18, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(mx, my, 3, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill();
-    [[mx-25,my,mx-8,my],[mx+8,my,mx+25,my],[mx,my-25,mx,my-8],[mx,my+8,mx,my+25]].forEach(([x1,y1,x2,y2]) => {
-      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-    });
-    ctx.restore();
-
-    rafRef.current = requestAnimationFrame(loop);
-  }, []);
-
-  // ── Spawn target ──────────────────────────────────────────────────────────
-  const spawnTarget = () => {
-    const c = canvasRef.current;
-    const r = Math.random()*15+20;
-    const speed = Math.random()*2+1;
-    const angle = Math.random()*Math.PI*2;
-    stateRef.current.targets.push({
-      x: Math.random()*(c.width-r*2)+r,
-      y: Math.random()*(c.height-r*2)+r,
-      r, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
-    });
-  };
-
-  // ── Start ──────────────────────────────────────────────────────────────────
-  const startGame = () => {
-    cancelAnimationFrame(rafRef.current);
-    clearInterval(timerRef.current);
-
-    stateRef.current = { score:0, streak:0, shotsFired:0, shotsHit:0, ammo:6, timeLeft:30, targets:[], particles:[], holes:[] };
-    setHud({ score:0, streak:0, ammo:6, time:30 });
-    setFinalStats(null);
-    setPhase('playing');
-
-    for (let i=0; i<5; i++) spawnTarget();
-
-    timerRef.current = setInterval(() => {
-      const s = stateRef.current;
-      if (!s) return;
-      s.timeLeft--;
-      setHud(h => ({ ...h, time: s.timeLeft }));
-      if (s.timeLeft <= 0) endGame();
-    }, 1000);
-
-    rafRef.current = requestAnimationFrame(loop);
-  };
-
-  // ── End ────────────────────────────────────────────────────────────────────
-  const endGame = () => {
-    clearInterval(timerRef.current);
-    cancelAnimationFrame(rafRef.current);
-    const s = stateRef.current;
-    const acc = s.shotsFired > 0 ? Math.round((s.shotsHit/s.shotsFired)*100) : 0;
-    setFinalStats({ score: s.score, accuracy: acc });
-    setPhase('over');
-  };
-
-  // ── Shoot ──────────────────────────────────────────────────────────────────
-  const handleClick = useCallback((e) => {
-    if (phase !== 'playing') return;
-    const s = stateRef.current;
-    const c = canvasRef.current;
-    if (!s || !c) return;
-
-    if (s.ammo <= 0) return;
-    s.ammo--; s.shotsFired++;
-    playTone(300, 0.01, 0.15);
-
-    const rect = c.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    s.holes.push({ x: mx, y: my, a: 1 });
-
-    let hit = false;
-    for (let i = s.targets.length-1; i >= 0; i--) {
-      const t = s.targets[i];
-      if (Math.hypot(mx-t.x, my-t.y) < t.r) {
-        hit = true; s.shotsHit++; s.streak++;
-        const pts = Math.hypot(mx-t.x, my-t.y) < t.r*0.3 ? 150 : 100;
-        s.score += pts * Math.min(s.streak, 5);
-        playTone(800, 400, 0.1, 'sine', 0.2);
-        // Particles
-        for (let p=0; p<15; p++) {
-          s.particles.push({ x:t.x, y:t.y, vx:(Math.random()-0.5)*8, vy:(Math.random()-0.5)*8, r:Math.random()*4+2, a:1 });
-        }
-        s.targets.splice(i, 1);
-        spawnTarget();
-        break;
-      }
-    }
-    if (!hit) s.streak = 0;
-    if (s.ammo === 0) { /* show prompt via state */ }
-
-    setHud({ score: s.score, streak: s.streak, ammo: s.ammo, time: s.timeLeft });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, loop, playTone]);
-
-  // ── Reload ─────────────────────────────────────────────────────────────────
-  const reload = useCallback(() => {
-    if (phase !== 'playing') return;
-    const s = stateRef.current; if (!s) return;
-    s.ammo = 6;
-    playTone(200, 600, 0.2, 'triangle', 0.2);
-    setHud(h => ({ ...h, ammo: 6 }));
-  }, [phase, playTone]);
-
-  // Keyboard R
-  useEffect(() => {
-    const onKey = (e) => { if ((e.key === 'r' || e.key === 'R') && phase === 'playing') reload(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [phase, reload]);
-
-  // Mouse tracking
-  const onMouseMove = (e) => {
-    const c = canvasRef.current; if (!c) return;
-    const rect = c.getBoundingClientRect();
-    mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  return (
-    <div className="relative w-full h-full flex flex-col select-none" style={{ cursor: 'none' }}>
-      <canvas
-        ref={canvasRef}
-        className="w-full flex-1 block"
-        onMouseMove={onMouseMove}
-        onClick={handleClick}
-        style={{ cursor: 'none' }}
-      />
-
-      {/* HUD */}
-      {phase === 'playing' && (
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-center pointer-events-none font-bold text-sm">
-          <div className="bg-slate-900/85 border border-slate-700 px-3 py-1.5 rounded-xl flex items-center gap-3 text-white">
-            <span><span className="text-slate-400 text-[10px] block">SCORE</span><span className="text-yellow-400 text-lg">{hud.score}</span></span>
-            <span className="h-6 w-px bg-slate-700" />
-            <span><span className="text-slate-400 text-[10px] block">STREAK</span><span className="text-cyan-400 text-lg">{hud.streak}x</span></span>
-          </div>
-          <div className="bg-slate-900/85 border border-slate-700 px-4 py-1.5 rounded-xl text-center text-white">
-            <span className="text-slate-400 text-[10px] block">TIME</span>
-            <span className="text-red-400 text-lg">{hud.time}s</span>
-          </div>
-          <div className="bg-slate-900/85 border border-slate-700 px-3 py-1.5 rounded-xl text-right text-white">
-            <span className="text-slate-400 text-[10px] block">AMMO</span>
-            <span className="text-emerald-400 text-lg">{hud.ammo}/6</span>
-          </div>
-        </div>
-      )}
-
-      {/* Out of ammo */}
-      {phase === 'playing' && hud.ammo === 0 && (
-        <button
-          onClick={reload}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-red-600/90 text-white font-bold px-5 py-2 rounded-full shadow-lg border border-red-400 animate-pulse text-xs pointer-events-auto"
-        >
-          OUT OF AMMO! CLICK or [R] to Reload
-        </button>
-      )}
-
-      {/* Sound toggle */}
-      <button
-        onClick={() => setSoundOn(s => !s)}
-        className="absolute bottom-3 right-3 w-8 h-8 rounded-lg bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white pointer-events-auto transition"
-      >
-        <i className={`fa-solid ${soundOn ? 'fa-volume-high' : 'fa-volume-xmark text-red-400'} text-xs`} />
-      </button>
-
-      {/* Start / Game Over overlay */}
-      {phase !== 'playing' && (
-        <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white z-20">
-          <div className="w-16 h-16 bg-gradient-to-tr from-red-500 to-orange-500 rounded-2xl flex items-center justify-center text-3xl shadow-2xl mb-4 border border-red-400/30">
-            <i className="fa-solid fa-crosshairs" />
-          </div>
-          <h3 className="text-3xl font-extrabold mb-1" style={{ fontFamily: 'Fredoka, sans-serif' }}>
-            {phase === 'over' ? "Time's Up!" : 'Pistol Target Shoot'}
-          </h3>
-          <p className="text-slate-300 text-sm mb-5 max-w-xs">
-            {phase === 'over'
-              ? 'Check your results below!'
-              : 'Shoot the bullseyes! Aim with mouse, click to fire, [R] to reload.'}
-          </p>
-
-          {phase === 'over' && finalStats && (
-            <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-5 bg-slate-900 p-4 rounded-2xl border border-slate-800">
-              <div><span className="text-[10px] text-slate-400 block">FINAL SCORE</span><span className="text-2xl font-bold text-yellow-400">{finalStats.score}</span></div>
-              <div><span className="text-[10px] text-slate-400 block">ACCURACY</span><span className="text-2xl font-bold text-cyan-400">{finalStats.accuracy}%</span></div>
-            </div>
-          )}
-
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-red-500 to-orange-500 hover:brightness-110 text-white text-base font-bold px-8 py-3 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <i className={`fa-solid ${phase === 'over' ? 'fa-rotate-right' : 'fa-play'}`} />
-            {phase === 'over' ? 'PLAY AGAIN' : 'START SHOOTING'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Animated mini-preview for Pistol Duel card (Authentic Game Visuals) ──────
 function DuelPreviewCanvas() {
@@ -706,11 +400,11 @@ export default function WebGame({ onLaunchBike }) {
       {/* ── Modal ────────────────────────────────────────────────────────── */}
       {modal && (
         <div
-          className="fixed inset-0 bg-slate-950/85 z-50 flex items-center justify-center p-0 sm:p-2 md:p-4 backdrop-blur-md"
+          className={`fixed inset-0 z-50 flex items-center justify-center ${modal.duel || modal.id === 0 || modal.id === 1 || (modal.title && modal.title.includes('Pistol')) ? 'p-0 bg-black/95' : 'p-0 sm:p-2 md:p-4 bg-slate-950/85 backdrop-blur-md'}`}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          {modal.duel ? (
-            <div className="w-full max-w-5xl h-full max-h-[700px] flex items-center justify-center p-0">
+          {modal.duel || modal.id === 0 || modal.id === 1 || (modal.title && modal.title.includes('Pistol')) ? (
+            <div className="w-full max-w-[1080px] h-full max-h-[620px] flex items-center justify-center p-0">
               <PistolDuel
                 onClose={closeModal}
                 onToggleFullscreen={toggleFullscreen}
@@ -731,7 +425,7 @@ export default function WebGame({ onLaunchBike }) {
                   <div>
                     <h2 className="text-white font-extrabold text-lg md:text-xl" style={{ fontFamily: 'Fredoka, sans-serif' }}>{modal.title}</h2>
                     <p className="text-slate-400 text-xs">
-                      {modal.bike ? 'Traffic Rider 3D · First-Person Superbike · Highway Traffic' : modal.playable ? 'Shoot targets · Aim with mouse · R to reload' : 'Coming soon!'}
+                      {modal.bike ? 'Traffic Rider 3D · First-Person Superbike · Highway Traffic' : 'Coming soon!'}
                     </p>
                   </div>
                 </div>
@@ -753,7 +447,7 @@ export default function WebGame({ onLaunchBike }) {
                 </div>
               </div>
 
-              {/* Game area — explicit height so children can use 100% */}
+              {/* Game area */}
               <div
                 ref={gameAreaRef}
                 className="flex-1 bg-slate-950 relative overflow-hidden"
@@ -761,8 +455,6 @@ export default function WebGame({ onLaunchBike }) {
               >
                 {modal.bike ? (
                   <BikeRacer onClose={closeModal} />
-                ) : modal.playable ? (
-                  <PistolGame containerRef={gameAreaRef} />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-white p-8 text-center">
                     <i className="fa-solid fa-gamepad text-6xl text-cyan-400 mb-4 animate-bounce" />
