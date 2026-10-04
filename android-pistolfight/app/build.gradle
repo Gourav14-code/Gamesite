@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.gamesite.bikeracer"
+    namespace = "com.gamesite.pistolfight"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.gamesite.pistolfight"
