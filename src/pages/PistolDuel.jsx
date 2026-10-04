@@ -160,6 +160,13 @@ function normAngle(a) {
   return a;
 }
 
+// ── Pre-cached Authentic Beretta 92FS Pistol Sprites ─────────────────────────
+const playerGunSprite = typeof window !== 'undefined' ? new Image() : null;
+if (playerGunSprite) playerGunSprite.src = '/images/player_gun.png';
+
+const cpuGunSprite = typeof window !== 'undefined' ? new Image() : null;
+if (cpuGunSprite) cpuGunSprite.src = '/images/cpu_gun.png';
+
 // ── Realistic 3D Illustrated Pistol Drawing ───────────────────────────────────
 function renderArcadeGun(ctx, gun, isPlayer) {
   const GL = gun.length;
@@ -180,9 +187,21 @@ function renderArcadeGun(ctx, gun, isPlayer) {
 
   // Gun Drop Shadow on CRT glass
   ctx.shadowColor = 'rgba(0,0,0,0.85)';
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 14;
   ctx.shadowOffsetX = 3;
   ctx.shadowOffsetY = 4;
+
+  // Render authentic Beretta 92FS Sprite if loaded
+  const sprite = isPlayer ? playerGunSprite : cpuGunSprite;
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const w = GL * 1.18;
+    const h = w * (sprite.naturalHeight / sprite.naturalWidth);
+    const ox = -w * 0.40;
+    const oy = -h * 0.46;
+    ctx.drawImage(sprite, ox, oy, w, h);
+    ctx.restore();
+    return;
+  }
 
   // 1. Grip / Handle
   ctx.fillStyle = '#141416';
