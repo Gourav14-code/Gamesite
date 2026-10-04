@@ -27,8 +27,9 @@ export default function CyberCursor() {
   const isVisibleRef = useRef(false);
 
   useEffect(() => {
-    // Check if device supports fine pointer (mouse / trackpad), not touch-only
-    const hasPointer = window.matchMedia('(pointer: fine)').matches;
+    // Check if device supports fine pointer (mouse / trackpad) and is not a mobile touch device
+    const isMobile = window.innerWidth < 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const hasPointer = window.matchMedia('(pointer: fine)').matches && !isMobile;
     if (!hasPointer) {
       setEnabled(false);
       return;

@@ -1012,7 +1012,7 @@ function makeGuardrailGeometry(side, segs, roadW, roadL) {
 
 // ── Related Games Catalog ───────────────────────────────────────────────────
 const RELATED_GAMES = [
-  { id: 0, title: 'Pistol Duel', category: 'Action', icon: 'fa-crosshairs', color: 'from-slate-700 to-indigo-900', rating: '99%' },
+  { id: 0, title: 'Neon Duel Shot', category: 'Action', icon: 'fa-crosshairs', color: 'from-slate-700 to-indigo-900', rating: '99%' },
   { id: 3, title: 'Speed Racer 3D', category: 'Racing', icon: 'fa-car-side', color: 'from-blue-600 to-indigo-700', rating: '92%' },
   { id: 10, title: 'Super Bike Stunts', category: 'Racing', icon: 'fa-motorcycle', color: 'from-orange-500 to-red-600', rating: '90%' },
   { id: 12, title: 'Highway Moto', category: 'Racing', icon: 'fa-gauge-high', color: 'from-sky-500 to-blue-600', rating: '87%' },
@@ -1204,6 +1204,25 @@ export default function BikeRacer({ onClose, onSelectGame }) {
   const [loadStatus, setLoadStatus] = useState('Downloading Resources...');
   const [countdown, setCountdown] = useState(null); // null | 3 | 2 | 1 | 'GO!'
   const [showRelatedMobile, setShowRelatedMobile] = useState(false);
+
+  const handleLaunchRelatedGame = useCallback((gameId) => {
+    const isNative = typeof window !== 'undefined' && Boolean(
+      window.__APP_TARGET__ ||
+      (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+    );
+    if (isNative && gameId === 0) {
+      // In standalone Android App: Redirect to Neon Duel Shot on Google Play Store
+      try {
+        window.location.href = 'market://details?id=com.gamesite.pistolfight';
+      } catch {}
+      setTimeout(() => {
+        window.open('https://play.google.com/store/apps/details?id=com.gamesite.pistolfight', '_blank');
+      }, 300);
+      return;
+    }
+    if (onSelectGame) onSelectGame(gameId);
+    else if (onClose) onClose();
+  }, [onSelectGame, onClose]);
 
   const triggerScorePopupRef = useRef(null);
   const emitFireBurstRef = useRef(null);
@@ -3131,10 +3150,7 @@ export default function BikeRacer({ onClose, onSelectGame }) {
                     {RELATED_GAMES.map(g => (
                       <div
                         key={g.id}
-                        onClick={() => {
-                          if (onSelectGame) onSelectGame(g.id);
-                          else if (onClose) onClose();
-                        }}
+                        onClick={() => handleLaunchRelatedGame(g.id)}
                         className="flex items-center justify-between p-1.5 rounded-xl bg-black/40 hover:bg-white/10 border border-white/5 hover:border-cyan-500/40 cursor-pointer transition-all active:scale-95 group"
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -3191,8 +3207,7 @@ export default function BikeRacer({ onClose, onSelectGame }) {
                         key={g.id}
                         onClick={() => {
                           setShowRelatedMobile(false);
-                          if (onSelectGame) onSelectGame(g.id);
-                          else if (onClose) onClose();
+                          handleLaunchRelatedGame(g.id);
                         }}
                         className="flex items-center justify-between p-2.5 rounded-2xl bg-white/5 active:bg-white/10 border border-white/5 cursor-pointer"
                       >

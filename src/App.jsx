@@ -8,15 +8,30 @@ import CyberCursor from './components/CyberCursor.jsx';
 export default function App() {
   const isNative = Capacitor.isNativePlatform();
 
-  // In native Android app, directly start Bike Racer.
-  // In web browser (desktop/laptop/mobile), default to the main gaming homepage/portal!
+  // In native Android apps:
+  // - If window.__APP_TARGET__ === 'bikeracer' -> starts 3D Bike Racer directly
+  // - If window.__APP_TARGET__ === 'pistolfight' -> starts Pistol Fight directly
+  // In web browser (desktop/laptop/mobile), defaults to main portal!
   const [view, setView] = useState(() => {
-    if (isNative) return 'bikeracer';
+    if (isNative) {
+      if (window.__APP_TARGET__ === 'bikeracer') return 'bikeracer';
+      if (window.__APP_TARGET__ === 'pistolfight') return 'duel';
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
+        return 'bikeracer';
+      }
+      return 'duel';
+    }
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'bikeracer' || params.get('game') === 'bikeracer') {
       return 'bikeracer';
     }
-    if (params.get('view') === 'duel' || params.get('game') === 'duel') {
+    if (
+      params.get('view') === 'duel' ||
+      params.get('game') === 'duel' ||
+      params.get('view') === 'pistolfight' ||
+      params.get('game') === 'pistolfight'
+    ) {
       return 'duel';
     }
     return 'portal';
@@ -75,10 +90,15 @@ export default function App() {
     return (
       <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#0c0e12] select-none touch-none flex items-center justify-center p-0">
         <PistolDuel
+          onHome={() => {
+            setView('portal');
+            if (!isNative) window.history.pushState({}, '', window.location.pathname);
+          }}
           onClose={() => {
             setView('portal');
             if (!isNative) window.history.pushState({}, '', window.location.pathname);
           }}
+          onSelectGame={(gameId) => handleSelectGame(gameId)}
           isFullscreen={true}
         />
       </div>

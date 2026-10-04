@@ -4,9 +4,9 @@ import BikeRacer  from './BikeRacer';
 
 // ─── Game Catalog ────────────────────────────────────────────────────────────
 const GAMES_DATA = [
-  { id: 0, title: 'Pistol Duel',         category: 'Action', size: '2x2', color: 'from-slate-800 to-indigo-900', icon: 'fa-crosshairs',   likes: '99%', playable: true, duel: true  },
+  { id: 0, title: 'Neon Duel Shot',        category: 'Action', size: '2x2', color: 'from-slate-800 to-indigo-900', icon: 'fa-crosshairs',   likes: '99%', playable: true, duel: true  },
   { id:-1, title: '3D Bike Racer',       category: 'Racing', size: '2x2', color: 'from-blue-800 to-cyan-700',   icon: 'fa-motorcycle',   likes: '97%', playable: true, bike: true  },
-  { id: 1, title: 'Pistol Duel (Level 2)', category: 'Action', size: '2x1', color: 'from-red-500 to-amber-600',   icon: 'fa-crosshairs',   likes: '98%', playable: true, duel: true  },
+  { id: 1, title: 'Neon Duel Shot (Level 2)', category: 'Action', size: '2x1', color: 'from-red-500 to-amber-600',  icon: 'fa-crosshairs',   likes: '98%', playable: true, duel: true  },
   { id: 2, title: 'Subway Surfers',      category: 'Arcade', size: '1x2', color: 'from-emerald-400 to-teal-600', icon: 'fa-person-running',likes: '95%', playable: false },
   { id: 3, title: 'Speed Racer 3D',      category: 'Racing', size: '2x1', color: 'from-blue-600 to-indigo-700',  icon: 'fa-car-side',     likes: '92%', playable: false },
   { id: 4, title: 'Temple Dash',         category: 'Action', size: '1x1', color: 'from-yellow-500 to-amber-700', icon: 'fa-person-hiking', likes: '91%', playable: false },
@@ -163,9 +163,9 @@ function GameCard({ game, onOpen }) {
           </div>
           <div>
             <h3 className="text-white font-extrabold text-lg drop-shadow-lg mb-0.5" style={{ fontFamily: 'Fredoka, sans-serif', textShadow: '0 0 15px #38bdf8' }}>
-              Pistol Duel
+              Neon Duel Shot
             </h3>
-            <p className="text-slate-300 text-[11px] mb-2">Player vs CPU · 5 Levels · Recoil Physics</p>
+            <p className="text-slate-300 text-[11px] mb-2">Player vs CPU · 50 Levels · Recoil Physics</p>
             <div className="flex items-center justify-between">
               <span className="text-slate-400 text-xs"><i className="fa-solid fa-thumbs-up text-xs mr-1 text-cyan-400" />{game.likes}</span>
               <span className="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-xl shadow flex items-center gap-1">
@@ -406,12 +406,19 @@ export default function WebGame({ onLaunchBike }) {
           {modal.duel || modal.id === 0 || modal.id === 1 || (modal.title && modal.title.includes('Pistol')) ? (
             <div className="w-full max-w-[1080px] h-full flex items-center justify-center p-0 sm:p-2">
               <PistolDuel
+                onHome={closeModal}
                 onClose={closeModal}
                 onToggleFullscreen={toggleFullscreen}
                 isFullscreen={fullscreen}
                 isLiked={!!likedGames[modal.id]}
                 onToggleLike={() => setLikedGames(prev => ({ ...prev, [modal.id]: !prev[modal.id] }))}
                 onReport={() => setReportedGame(modal.id)}
+                onSelectGame={(gameId) => {
+                  closeModal();
+                  if (gameId === -1) {
+                    handleOpenGame(GAMES_DATA[1]);
+                  }
+                }}
               />
             </div>
           ) : (
@@ -462,7 +469,7 @@ export default function WebGame({ onLaunchBike }) {
                     <p className="text-slate-400 text-sm mb-6 max-w-sm">This game is coming soon! Try our playable games below.</p>
                     <div className="flex gap-3">
                       <button onClick={() => setModal(GAMES_DATA[0])} className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
-                        🔫 Pistol Duel
+                        🔫 Neon Duel Shot
                       </button>
                       <button onClick={() => setModal(GAMES_DATA[1])} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition hover:scale-105">
                         🏍️ Bike Racer
