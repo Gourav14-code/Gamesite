@@ -819,8 +819,8 @@ export default function PistolDuel({
             if (s.screenShake < 0.3) s.screenShake = 0;
           }
 
-          // 1. Dark CRT Display Background
-          ctx.fillStyle = '#080a10';
+          // 1. Dark CRT Display Background with 3D Fog Blend
+          ctx.fillStyle = 'rgba(7, 9, 15, 0.72)';
           ctx.fillRect(0, 0, W, H);
 
           // 2. High-Precision Technical Grid
@@ -1001,44 +1001,49 @@ export default function PistolDuel({
           - Portrait / Mobile: Vertical arcade machine where "Pistol Duel"
             plaque is at the TOP, followed by neon tubes, CRT duel, & bottom controls!
           ═════════════════════════════════════════════════════════════════════ */}
+      {/* ═════════════════════════════════════════════════════════════════════
+          3D NEON LIGHTS GAMEPLAY FRAME
+          - Desktop / Webpage: 3D Neon Lights Background (1920x1440 landscape)
+          - Mobile View: 3D Neon Portrait Frame (1080x1920 portrait)
+          ═════════════════════════════════════════════════════════════════════ */}
       <div
         className={`relative w-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
           isPortrait
-            ? 'max-w-[460px] h-full max-h-[96vh] aspect-[768/1376]'
-            : 'max-w-[1040px] max-h-[92vh] aspect-[610/329]'
+            ? 'max-w-[480px] h-full max-h-[98vh] aspect-[1080/1920]'
+            : 'max-w-[1040px] max-h-[92vh] aspect-[1920/1440]'
         }`}
         style={{
           filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.95))',
         }}
       >
-        {/* ── 1. AUTHENTIC PHOTOREALISTIC ARCADE CABINET CONSOLE IMAGE ─────── */}
+        {/* ── 1. AUTHENTIC 3D NEON LIGHTS FRAME BACKGROUND ─────── */}
         <img
-          src={isPortrait ? '/images/pistol_duel_cabinet_portrait.jpg' : '/images/pistol_duel_cabinet_landscape.png'}
-          alt="Pistol Duel Arcade Console"
+          src={isPortrait ? '/images/mobile_neon_frame.jpg' : '/images/desktop_neon_frame.jpg'}
+          alt="Pistol Duel Neon Arena Frame"
           className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none z-10"
         />
 
-        {/* ── 2. ACTIVE CRT MONITOR SCREEN (Coordinates match cabinet screen window) ── */}
+        {/* ── 2. ACTIVE CRT MONITOR SCREEN (Coordinates match inner neon rectangle) ── */}
         <div
           ref={screenAreaRef}
           className="absolute overflow-hidden cursor-crosshair z-20"
           style={
             isPortrait
               ? {
-                  left: '26.56%',
-                  top: '26.74%',
-                  width: '46.88%',
-                  height: '42.59%',
-                  borderRadius: '12px',
-                  boxShadow: 'inset 0 0 25px rgba(0,0,0,0.95)',
+                  left: '9.2%',
+                  top: '6.2%',
+                  width: '81.6%',
+                  height: '82.5%',
+                  borderRadius: '34px',
+                  boxShadow: 'inset 0 0 25px rgba(0,0,0,0.85)',
                 }
               : {
-                  left: '14.2%',
-                  top: '20.6%',
-                  width: '71.2%',
-                  height: '55.2%',
-                  borderRadius: '6px',
-                  boxShadow: 'inset 0 0 35px rgba(0,0,0,0.95)',
+                  left: '11.2%',
+                  top: '16.0%',
+                  width: '77.6%',
+                  height: '67.8%',
+                  borderRadius: '28px',
+                  boxShadow: 'inset 0 0 35px rgba(0,0,0,0.85)',
                 }
           }
           onClick={handleShoot}
@@ -1047,23 +1052,23 @@ export default function PistolDuel({
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
 
           {/* In-Screen HUD Overlay */}
-          <div className="absolute top-0 left-0 right-0 px-2 sm:px-4 pt-1 sm:pt-2 pb-1 flex items-start justify-between pointer-events-none z-30">
+          <div className="absolute top-0 left-0 right-0 px-3 sm:px-5 pt-2 sm:pt-3 pb-1 flex items-start justify-between pointer-events-none z-30">
             {/* Upper-Left: P1 + 4 Hearts (3 cyan filled, 1 empty outline) */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span
-                className="font-mono font-black text-[11px] sm:text-xs tracking-widest text-[#00e5ff]"
+                className="font-mono font-black text-xs sm:text-sm tracking-widest text-[#00e5ff]"
                 style={{ textShadow: '0 0 8px rgba(0,229,255,0.8)' }}
               >
                 P1
               </span>
-              <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
+              <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
                 {[...Array(hud.playerMaxHp)].map((_, i) => (
                   <span
                     key={i}
                     className={
                       i < hud.playerHp
                         ? 'text-[#00e5ff] drop-shadow-[0_0_8px_#00e5ff]'
-                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-2.5 h-2.5 -mt-0.5'
+                        : 'text-transparent border border-[#00e5ff] rounded-full inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 -mt-0.5'
                     }
                   >
                     {i < hud.playerHp ? '♥' : ''}
@@ -1072,10 +1077,18 @@ export default function PistolDuel({
               </div>
             </div>
 
+            {/* Center: Glowing Cyber Plaque */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-400/40 backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+              <i className="fa-solid fa-crosshairs text-cyan-400 text-xs"></i>
+              <span className="font-serif font-black tracking-widest text-[11px] sm:text-xs uppercase bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-400 bg-clip-text text-transparent">
+                Pistol Duel
+              </span>
+            </div>
+
             {/* Upper-Right: CPU Hearts + Status Capsule */}
             <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-base">
                   {[...Array(hud.cpuMaxHp)].map((_, i) => (
                     <span
                       key={i}
@@ -1090,7 +1103,7 @@ export default function PistolDuel({
                   ))}
                 </div>
                 <span
-                  className="font-mono font-black text-[11px] sm:text-xs tracking-widest text-[#ef4444]"
+                  className="font-mono font-black text-xs sm:text-sm tracking-widest text-[#ef4444]"
                   style={{ textShadow: '0 0 8px rgba(239,68,68,0.8)' }}
                 >
                   CPU
@@ -1098,7 +1111,7 @@ export default function PistolDuel({
               </div>
 
               {/* Status Capsule */}
-              <div className="bg-[#121620]/95 px-2 py-0.5 rounded-full border border-white/15 flex items-center gap-1.5 text-[8.5px] sm:text-[10px] font-mono shadow-inner pointer-events-auto">
+              <div className="bg-[#121620]/95 px-2.5 py-0.5 rounded-full border border-white/15 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono shadow-inner pointer-events-auto">
                 <span className="font-extrabold text-slate-200 tracking-wider">
                   LEVEL {hud.level}
                 </span>
@@ -1119,6 +1132,15 @@ export default function PistolDuel({
                 </button>
                 <span className="text-emerald-400 text-[10px]">🔋</span>
               </div>
+            </div>
+          </div>
+
+          {/* Bottom Instruction Slot Inside Screen */}
+          <div className="absolute bottom-2 sm:bottom-3 left-0 right-0 flex items-center justify-center pointer-events-none px-4">
+            <div className="bg-slate-950/80 backdrop-blur-md px-3 sm:px-5 py-1 rounded-full border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+              <span className="text-[8px] sm:text-[10px] md:text-[11px] font-black tracking-widest text-cyan-200 uppercase font-mono animate-pulse">
+                TAP TO SHOOT — MASTER THE RECOIL FOR THE NEXT LEVEL!
+              </span>
             </div>
           </div>
 
@@ -1181,80 +1203,65 @@ export default function PistolDuel({
           )}
         </div>
 
-        {/* ── 3. INTERACTIVE BUTTON TOUCH OVERLAYS ───────────────────────── */}
-        {/* Fullscreen Scope Button */}
-        {onToggleFullscreen && (
+        {/* ── 3. FULLSCREEN & EXIT BUTTONS (Top-Right) ───────────────────── */}
+        <div className="absolute top-2.5 right-3 sm:right-4 z-30 flex items-center gap-1.5">
+          {onToggleFullscreen && (
+            <button
+              onClick={() => {
+                playSound('click', soundRef.current);
+                onToggleFullscreen();
+              }}
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer active:scale-95 shadow-md"
+              title="Fullscreen"
+            >
+              <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-xs sm:text-sm`} />
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={() => {
+                playSound('click', soundRef.current);
+                onClose();
+              }}
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 hover:bg-red-500/40 border border-white/20 text-slate-300 hover:text-red-300 transition cursor-pointer active:scale-95 shadow-md"
+              title="Exit Game"
+            >
+              <i className="fa-solid fa-xmark text-xs sm:text-sm" />
+            </button>
+          )}
+        </div>
+
+        {/* ── 4. LIKE & REPORT BUTTONS (Bottom Controls) ────────────────── */}
+        <div
+          className="absolute z-30 flex items-center justify-center gap-3 w-full"
+          style={isPortrait ? { bottom: '2.5%' } : { bottom: '3.5%' }}
+        >
           <button
             onClick={() => {
               playSound('click', soundRef.current);
-              onToggleFullscreen();
+              toggleLike();
             }}
-            className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-white/10 transition"
-            style={
-              isPortrait
-                ? { left: '74%', top: '7.8%', width: '15%', height: '4.8%' }
-                : { left: '81%', top: '4.2%', width: '5.2%', height: '9.7%' }
-            }
-            title="Fullscreen"
-          />
-        )}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs backdrop-blur-md border transition cursor-pointer active:scale-95 shadow-lg ${
+              isLiked
+                ? 'bg-emerald-500/25 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                : 'bg-slate-950/75 hover:bg-slate-900/90 border-white/20 text-slate-300 hover:text-white'
+            }`}
+          >
+            <i className={`fa-solid fa-thumbs-up ${isLiked ? 'text-emerald-400' : 'text-slate-400'}`} />
+            <span>Like (99%)</span>
+          </button>
 
-        {/* Exit Button */}
-        {onClose && (
           <button
             onClick={() => {
               playSound('click', soundRef.current);
-              onClose();
+              triggerReport();
             }}
-            className="absolute z-30 cursor-pointer active:scale-95 rounded-lg hover:bg-red-500/20 transition"
-            style={
-              isPortrait
-                ? { left: '74%', top: '13.8%', width: '15%', height: '4.8%' }
-                : { left: '86.5%', top: '4.2%', width: '5.2%', height: '9.7%' }
-            }
-            title="Exit Game"
-          />
-        )}
-
-        {/* Like (99%) Button Overlay */}
-        <button
-          onClick={() => {
-            playSound('click', soundRef.current);
-            toggleLike();
-          }}
-          className="absolute z-30 cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 transition"
-          style={
-            isPortrait
-              ? { left: '26%', top: '84.8%', width: '22%', height: '5.2%' }
-              : { left: '27%', top: '86.3%', width: '15.7%', height: '10.3%' }
-          }
-          title="Like Game"
-        >
-          {isLiked && (
-            <span className="absolute inset-0 border-2 border-emerald-400/80 rounded-xl pointer-events-none shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-          )}
-        </button>
-
-        {/* Report Game Button Overlay */}
-        <button
-          onClick={() => {
-            playSound('click', soundRef.current);
-            triggerReport();
-          }}
-          className="absolute z-30 cursor-pointer active:scale-95 rounded-xl hover:bg-white/10 transition"
-          style={
-            isPortrait
-              ? { left: '52%', top: '84.8%', width: '22%', height: '5.2%' }
-              : { left: '57%', top: '86.3%', width: '15.7%', height: '10.3%' }
-          }
-          title="Report Game"
-        >
-          {reportedMsg && (
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded shadow whitespace-nowrap">
-              Reported!
-            </span>
-          )}
-        </button>
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs backdrop-blur-md bg-slate-950/75 hover:bg-slate-900/90 border border-white/20 text-slate-300 hover:text-rose-300 transition cursor-pointer active:scale-95 shadow-lg"
+          >
+            <i className="fa-solid fa-flag text-slate-400 text-xs" />
+            <span>{reportedMsg ? 'Reported!' : 'Report game'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
