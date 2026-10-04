@@ -2513,7 +2513,13 @@ export default function PistolDuel({
           1. 3D GAME START SCREEN INTERFACE (Clean 3D Hero Screen)
           ═════════════════════════════════════════════════════════════════════ */}
       {phase === 'splash' && (
-        <div className="w-full h-full max-w-5xl flex flex-col justify-between items-center p-2 sm:p-4 select-none relative overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+        <div
+          className="w-full h-full max-w-5xl flex flex-col justify-between items-center px-2.5 pb-2 sm:px-4 sm:pb-4 select-none relative overflow-hidden animate-[fadeIn_0.3s_ease-out]"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 20px)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          }}
+        >
           {/* Subtle Ambient Glowing Green Particles / Sparks */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
             {[...Array(16)].map((_, i) => (
@@ -2693,7 +2699,11 @@ export default function PistolDuel({
 
         return (
           <div
-            className="w-full h-full max-w-2xl flex flex-col justify-between items-center p-2 sm:p-5 select-none relative overflow-y-auto animate-[fadeIn_0.25s_ease-out]"
+            className="w-full h-full max-w-2xl flex flex-col justify-between items-center px-2 pb-2 sm:px-5 sm:pb-5 select-none relative overflow-y-auto animate-[fadeIn_0.25s_ease-out]"
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top, 0px), 20px)',
+              paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+            }}
             onTouchStart={(e) => {
               touchStartXRef.current = e.touches[0].clientX;
             }}
@@ -2942,9 +2952,15 @@ export default function PistolDuel({
           - Mobile / Portrait: 9:16 Aspect Neon Frame (1080x1920)
           ═════════════════════════════════════════════════════════════════════ */}
       {(phase === 'playing' || phase === 'victory' || phase === 'failed') && (
-        <div className="w-full h-full max-w-lg md:max-w-4xl flex flex-col items-center justify-between p-1 sm:p-2 select-none relative overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+        <div
+          className="w-full h-full max-w-lg md:max-w-4xl flex flex-col items-center justify-between px-1.5 pb-1 sm:px-2 sm:pb-2 select-none relative overflow-hidden animate-[fadeIn_0.2s_ease-out]"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 20px)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 6px)',
+          }}
+        >
           {/* ── 1. UNIFIED TOP HEADER BAR (HEADER SIDE) ───────────────────── */}
-          <div className="w-full flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-white/15 shadow-xl z-30 flex-shrink-0 mb-1">
+          <div className="w-full flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-white/15 shadow-xl z-30 flex-shrink-0 mb-1">
             {/* Left: Neon Duel Shot Logo & Level Badge */}
             <div className="flex items-center gap-2 min-w-0">
               <img
@@ -3020,12 +3036,12 @@ export default function PistolDuel({
             className="relative flex items-center justify-center overflow-hidden transition-all duration-300 select-none my-auto"
             style={{
               width: isPortrait
-                ? 'min(calc(100vw - 12px), 430px, calc((100dvh - 125px) * 9 / 16))'
-                : 'min(94vw, 960px, calc((100dvh - 95px) * 4 / 3))',
+                ? 'min(calc(100vw - 12px), 430px, calc((100dvh - 138px) * 9 / 16))'
+                : 'min(94vw, 960px, calc((100dvh - 105px) * 4 / 3))',
               maxWidth: isPortrait ? '430px' : '960px',
               height: isPortrait
-                ? 'min(calc(100dvh - 125px), 710px, calc((100vw - 12px) * 16 / 9))'
-                : 'min(calc(100dvh - 95px), 660px, calc(94vw * 3 / 4))',
+                ? 'min(calc(100dvh - 138px), 710px, calc((100vw - 12px) * 16 / 9))'
+                : 'min(calc(100dvh - 105px), 660px, calc(94vw * 3 / 4))',
               aspectRatio: isPortrait ? '9 / 16' : '4 / 3',
               filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.95))',
             }}

@@ -3027,7 +3027,10 @@ export default function BikeRacer({ onClose, onSelectGame }) {
         {/* ── HUD (Playing) ── */}
         {/* ── HUD (Playing) ── */}
         {phase==='playing' && (
-          <div className="absolute inset-0 pointer-events-none z-30 p-3 md:p-5 flex flex-col justify-between">
+          <div
+            className="absolute inset-0 pointer-events-none z-30 px-3 pb-3 md:p-5 flex flex-col justify-between"
+            style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)' }}
+          >
 
             {/* Top Row */}
             <div className="flex items-start justify-between w-full gap-2">
